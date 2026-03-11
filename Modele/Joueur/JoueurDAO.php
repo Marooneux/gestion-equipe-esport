@@ -38,10 +38,7 @@ class JoueurDAO {
         $query = 'SELECT * FROM joueur';
         $statement=$this->database->pdo()->prepare($query);
         if ($statement->execute()){
-            return array_map(
-                function($joueur) { return $this->mapToJoueur($joueur); },
-                $statement->fetchAll(PDO::FETCH_ASSOC)
-            );
+            return $statement->fetchAll(PDO::FETCH_ASSOC);
         } else {
             exit();
         }
