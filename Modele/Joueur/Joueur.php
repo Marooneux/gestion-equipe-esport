@@ -135,5 +135,19 @@ class Joueur implements \JsonSerializable {
             'statut' => $this->statut->name
         ];
     }
+
+    // Créer un nouveau joueur utilisant l'array convertie du body json fournie avec post
+    public static function buildFromArray(array $data) {
+        return new self(
+            $data['joueurId'],
+            $data['nom'],
+            $data['prenom'],
+            $data['numeroDeLicence'],
+            new DateTime($data['dateDeNaissance']),
+            $data['tailleEnCm'],
+            $data['poidsEnKg'],
+            isset($data['statut']) ? JoueurStatut::fromName($data['statut']) : null
+        );
+    }
 }
 
