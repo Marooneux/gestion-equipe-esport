@@ -2,10 +2,10 @@
 class connection_bd {
 
     function getConnexion() {
-        $host = 'localhost';
-        $dbname = 'r401_api';
-        $user = 'root';
-        $mdp = 'admin';
+        $host = 'mysql-r401auth.alwaysdata.net';
+        $dbname = 'r401auth_users';
+        $user = 'r401auth';
+        $mdp = 'projetr401';
 
         try {
             $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $mdp);
