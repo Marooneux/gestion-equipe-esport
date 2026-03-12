@@ -4,6 +4,7 @@ require_once 'Utils/Http_Response.php';
 use R301\Psr4AutoloaderClass;
 use function R301\Utils\Http_response\deliver_response;
 use R301\Controleur\JoueurControleur;
+use R301\Modele\Joueur\Joueur;
 
 $loader = new Psr4AutoloaderClass;
 // register the autoloader
@@ -12,15 +13,25 @@ $loader->register();
 $loader->addNamespace('R301', '.');
 
 $http_method = $_SERVER["REQUEST_METHOD"];
-$uri = strtok($_SERVER["REQUEST_URI"], '?');
+$resource = strtok($_SERVER["REQUEST_URI"], '?');
 
-switch($http_method) {
-    case 'GET':
-        $joueurs = JoueurControleur::getInstance();
-        $data = $joueurs->listerTousLesJoueurs();
-        print_r($data);
-        deliver_response(200, "Donn[ee récuperée avec succèes", $data);
-        break;
+if($resource == "/joueurs") {
+    switch($http_method) {
+        case 'GET':
+            $joueurs = JoueurControleur::getInstance();
+            $data = $joueurs->listerTousLesJoueurs();
+            deliver_response(200, "Donn[ee récuperée avec succèes", $data);
+            break;
+        case 'POST':
+            $body = file_get_contents("php://input");
+            $data = json_decode($body, true);
+            $joueur = Joueur::buildFromArray($data);
+            $joueursClass = JoueurControleur::getInstance();
+            if($joueursClass->ajouterJoueurFromArray($joueur)) {
+                deliver_response("201", "Données crée avec succés.", $data);
+            }
+    }
+
 }
 
 ?>
