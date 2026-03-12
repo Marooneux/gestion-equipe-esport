@@ -95,6 +95,10 @@ class JoueurControleur {
         return $this->joueurs->updateJoueur($joueurAModifier);
     }
 
+    public function modifierJoueurByArray(Joueur $joueurAModifier) {
+        return $this->joueurs->updateJoueur($joueurAModifier);
+    }
+
     public function rechercherLesJoueurs(string $recherche, string $statut) : array {
         $tousLesjoueurs = $this->joueurs->selectAllJoueurs();
         $joueursTrouves = [];
