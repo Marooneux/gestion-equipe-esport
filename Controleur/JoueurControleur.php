@@ -47,8 +47,8 @@ class JoueurControleur {
         return $this->joueurs->insertJoueur($joueurACreer);
     }
 
-    public function ajouterJoueurFromArray(Joueur $joueur): bool {
-        return $this->joueurs->insertJoueur($joueur);
+    public function ajouterJoueurFromArray(Joueur $joueurACreer): bool {
+        return $this->joueurs->insertJoueur($joueurACreer);
     }
 
     public function getJoueurById(int $joueurId) : Joueur {
