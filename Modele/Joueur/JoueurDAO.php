@@ -35,16 +35,17 @@ class JoueurDAO {
     }
 
 
-    public function selectAllJoueurs(): array {
+    public function selectAllJoueurs() {
         $query = 'SELECT * FROM joueur';
         $statement=$this->database->pdo()->prepare($query);
-        if ($statement->execute()){
+        $res = $statement->execute();
+        if ($res && $statement->rowCount()) {
             return array_map(
                 function($joueur) { return $this->mapToJoueur($joueur); },
                 $statement->fetchAll(PDO::FETCH_ASSOC)
             );
         } else {
-            exit();
+            return false;
         }
     }
 
@@ -62,14 +63,15 @@ class JoueurDAO {
         }
     }
 
-    public function selectJoueurById(int $joueurId): Joueur {
+    public function selectJoueurById(int $joueurId) {
         $query = 'SELECT * FROM joueur WHERE joueur_id = :joueur_id';
         $statement=$this->database->pdo()->prepare($query);
         $statement->bindValue(':joueur_id', $joueurId);
-        if ($statement->execute()){
-             return $this->mapToJoueur($statement->fetch(PDO::FETCH_ASSOC));
+        $res = $statement->execute();
+        if ($statement->rowCount() > 0) {
+            return $this->mapToJoueur($statement->fetch(PDO::FETCH_ASSOC));
         } else {
-            exit();
+            return false;
         }
     }
 
@@ -119,6 +121,11 @@ class JoueurDAO {
         $query = 'DELETE FROM joueur WHERE joueur_id = :joueur_id';
         $statement=$this->database->pdo()->prepare($query);
         $statement->bindValue(':joueur_id', $joueurId);
-        return $statement->execute();
+        $statement->execute();
+        if($statement->rowCount() > 0) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }
