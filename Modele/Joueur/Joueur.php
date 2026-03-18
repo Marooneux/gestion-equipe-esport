@@ -3,6 +3,7 @@
 namespace R301\Modele\Joueur;
 
 use DateTime;
+use InvalidArgumentException;
 
 class Joueur implements \JsonSerializable {
     private int $joueurId;
@@ -137,7 +138,13 @@ class Joueur implements \JsonSerializable {
     }
 
     // Créer un nouveau joueur utilisant l'array convertie du body json fournie avec post
-    public static function buildFromArray(array $data) {
+    public static function buildJoueurFromArray(array $data) {
+        if(sizeof($data) != 8 && sizeof($data) != 7) {
+            throw new InvalidArgumentException('Vous devez modifier toutes les champs de la ressource.');
+        }
+
+        
+
         return new self(
             $data['id'],
             $data['nom'],

@@ -95,7 +95,7 @@ class JoueurControleur {
         return $this->joueurs->updateJoueur($joueurAModifier);
     }
 
-    public function modifierJoueurByArray(Joueur $joueurAModifier) {
+    public function modifierJoueurByArray(Joueur $joueurAModifier) : bool {
         return $this->joueurs->updateJoueur($joueurAModifier);
     }
 
@@ -124,5 +124,5 @@ class JoueurControleur {
 
     public function supprimerJoueur(int $joueurId) : bool {
         return $this->joueurs->supprimerJoueur($joueurId);
-}
+    }
 }

@@ -59,7 +59,7 @@ class ParticipationControleur {
             return false;
         } else {
             $joueur = $this->joueurs->getJoueurById($joueurId);
-            $rencontre = $this->rencontres->getRenconterById($rencontreId);
+            $rencontre = $this->rencontres->getRencontreById($rencontreId);
 
             $participationACreer = new Participation(
                 0,

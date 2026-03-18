@@ -44,6 +44,10 @@ class RencontreControleur {
         }
     }
 
+    public function ajouterRencontreFromArray($rencontreAAjouter) {
+        return $this->rencontres->insertRencontre($rencontreAAjouter);
+    }
+
     public function enregistrerResultat(
         int $rencontreId,
         string $resultat
@@ -59,7 +63,7 @@ class RencontreControleur {
         }
     }
 
-    public function getRenconterById(int $rencontreId) : Rencontre {
+    public function getRencontreById(int $rencontreId) : Rencontre {
         return $this->rencontres->selectRencontreById($rencontreId);
     }
 
@@ -90,6 +94,10 @@ class RencontreControleur {
 
             return $this->rencontres->updateRencontre($rencontreAModifier);
         }
+    }
+
+    public function modifierRencontreByArray($rencontreAModifier) {
+        return $this->rencontres->updateRencontre($rencontreAModifier);
     }
 
     public function supprimerRencontre(int $rencontreId) : bool {
