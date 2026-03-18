@@ -1,11 +1,5 @@
 <?php
-require_once("jwt_utils.php");
-require_once("connection_bd.php");
-require_once("verifAuth.php");
-$verifAuth = new verifAuth();
-$connection = new connection_bd();
-$linkpdo = $connection->getConnexion();
-
+require_once(__DIR__ . "/../src/utils/jwt_utils.php");
 
 $http_method = $_SERVER['REQUEST_METHOD'];
 

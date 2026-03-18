@@ -1,12 +1,18 @@
 <?php
-require_once("jwt_utils.php");
+require_once(__DIR__ . "/../utils/jwt_utils.php");
 
 class verifAuth {
 
-    function verifAuth($linkpdo, $user, $password) {
+    private PDO $pdo;
+
+    public function __construct(PDO $pdo) {
+        $this->pdo = $pdo;
+    }
+
+    function verifAuth($user, $password) {
         if (!empty($user) && !empty($password)) {
             $sql = "SELECT * FROM users WHERE user = :user";
-            $stmt = $linkpdo->prepare($sql);
+            $stmt = $this->pdo->prepare($sql);
             $stmt->execute(['user' => $user]);
             $data = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($data) {

@@ -1,9 +1,8 @@
 <?php
-require_once("connection_bd.php");
-require_once("verifAuth.php");
-$verifAuth = new verifAuth();
-$connection = new connection_bd();
-$linkpdo = $connection->getConnexion();
+require_once(__DIR__ . "/../src/modele/verifAuth.php");
+require_once(__DIR__ . "/../src/modele/DatabaseHandler.php");
+$linkpdo = DatabaseHandler::getInstance()->pdo();
+$verifAuth = new verifAuth($linkpdo);
 
 
 $http_method = $_SERVER['REQUEST_METHOD'];
@@ -15,7 +14,7 @@ switch ($http_method){
 
         $login = $data["login"];
         $password = $data["password"];
-        $utilisateurValide = $verifAuth->verifAuth($linkpdo, $login, $password);
+        $utilisateurValide = $verifAuth->verifAuth($login, $password);
         if ($utilisateurValide == false) {
             deliver_response(400, "L'utilisateur et/ou le mot de passe sont incorrectes");
         } else {
