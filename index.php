@@ -7,6 +7,8 @@ use R301\Controleur\JoueurControleur;
 use R301\Modele\Joueur\Joueur;
 use R301\Controleur\RencontreControleur;
 use R301\Modele\Rencontre\Rencontre;
+use R301\Controleur\ParticipationControleur;
+use R301\Modele\Participation\Participation;
 
 $loader = new Psr4AutoloaderClass;
 // register the autoloader
@@ -18,6 +20,7 @@ $http_method = $_SERVER["REQUEST_METHOD"];
 $resource = strtok($_SERVER["REQUEST_URI"], '?');
 $joueursController = JoueurControleur::getInstance();
 $rencontresController = RencontreControleur::getInstance();
+$participationsController = ParticipationControleur::getInstance();
 
 
 if(rtrim($resource, "/") == "/joueurs") {
@@ -125,7 +128,6 @@ if(rtrim($resource, "/") == '/rencontre') {
                 deliver_response(400, $e->getMessage());
             } 
             break;
-            
     }
 }
 
@@ -174,7 +176,36 @@ if(preg_match('#^/rencontre/([0-9]+)$#', $resource, $matches) == 1) {
             }
             break;
     }
-    
+}
+
+if(rtrim($resource, "/") == "/feuilledematche") {
+    switch($http_method) {
+        case 'GET':
+            try {
+                $data = $participationsController->listerToutesLesParticipations();
+                if($data == true) {
+                    deliver_response(200, "Liste de toutes les participations récuperée avec succèes", $data);
+                } else {
+                    deliver_response(200, "La base de données ne contient aucun participation enregistré.");
+                }
+            } catch(PDOException $e) {
+                deliver_response(500, "Erreur lors de la récuperation des participations.");
+            }
+            break;
+        case 'POST':
+            $body = file_get_contents("php://input");
+            $data = json_decode($body, true);
+            try {
+            $participation = $participationsController->buildParticipationFromArray($data);
+                $participationsController->assignerUnParticipantByArray($participation);
+                deliver_response(201, "Données crée avec succés.");
+            } catch(PDOException $e) {
+                deliver_response(500, "Erreur lors de l'insertion du joueur");
+            }
+            break;
+            
+    }
+
 }
 
 ?>
