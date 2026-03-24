@@ -103,8 +103,6 @@ class Rencontre implements \JsonSerializable {
     }
 
     public function jsonSerialize(): array {
-        print_r($this->dateEtHeure);
-
         return [
             'id' => $this->rencontreId,
             'date_heure' => $this->dateEtHeure,
