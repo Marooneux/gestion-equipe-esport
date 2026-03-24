@@ -47,7 +47,7 @@ class ParticipationControleur {
         return new FeuilleDeMatch($this->participations->selectParticipationsByRencontreId($rencontreId));
     }
 
-    public function assignerUnParticipant(
+    public function assignerUnParticipant (
         int $joueurId,
         int $rencontreId,
         Poste $poste,
@@ -72,6 +72,22 @@ class ParticipationControleur {
 
             return $this->participations->insertParticipation($participationACreer);
         }
+    }
+
+    public function assignerUnParticipantByArray(Participation $participantAAjouter) {
+        $joueurId = $participantAAjouter->getParticipant()->getJoueurId();
+        $rencontreId = $participantAAjouter->getRencontre()->getRencontreId();
+        $poste = $participantAAjouter->getPoste();
+        $titulaireOuRemplacant = $participantAAjouter->getTitulaireOuRemplacant();
+        if ($this->participations->lePosteEstDejaOccupe($rencontreId, $poste, $titulaireOuRemplacant)
+            || $this->lejoueurEstDejaSurLaFeuilleDeMatch($rencontreId, $joueurId)
+        ) {
+            return false;
+        }
+    }
+
+    public function insertUneParticpation(Participation $participationAInserer) {
+
     }
 
     public function modifierParticipation(
@@ -119,5 +135,19 @@ class ParticipationControleur {
 
         $participationAEvaluer->setPerformance(null);
         return $this->participations->updatePerformance($participationAEvaluer);
+    }
+
+    public function buildParticipationFromArray($data) {
+        $joueur = $this->joueurs->getJoueurById($data['joueur_id']);
+        $rencontre = $this->rencontres->getRencontreById($data['rencontre_id']);
+
+        return new Participation(
+            $data['id'],
+            $joueur,
+            $rencontre,
+            TitulaireOuRemplacant::fromName($data['titularité']),
+            Performance::fromName($data['performance']),
+            Poste::fromName($data['poste'])
+        );
     }
 }
