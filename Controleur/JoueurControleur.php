@@ -47,7 +47,11 @@ class JoueurControleur {
         return $this->joueurs->insertJoueur($joueurACreer);
     }
 
-    public function getJoueurById(int $joueurId) : Joueur {
+    public function ajouterJoueurFromArray(Joueur $joueurACreer): bool {
+        return $this->joueurs->insertJoueur($joueurACreer);
+    }
+
+    public function getJoueurById(int $joueurId) {
         return $this->joueurs->selectJoueurById($joueurId);
     }
 
@@ -91,6 +95,10 @@ class JoueurControleur {
         return $this->joueurs->updateJoueur($joueurAModifier);
     }
 
+    public function modifierJoueurByArray(Joueur $joueurAModifier) : bool {
+        return $this->joueurs->updateJoueur($joueurAModifier);
+    }
+
     public function rechercherLesJoueurs(string $recherche, string $statut) : array {
         $tousLesjoueurs = $this->joueurs->selectAllJoueurs();
         $joueursTrouves = [];
@@ -116,5 +124,5 @@ class JoueurControleur {
 
     public function supprimerJoueur(int $joueurId) : bool {
         return $this->joueurs->supprimerJoueur($joueurId);
-}
+    }
 }

@@ -3,8 +3,9 @@
 namespace R301\Modele\Joueur;
 
 use DateTime;
+use InvalidArgumentException;
 
-class Joueur {
+class Joueur implements \JsonSerializable {
     private int $joueurId;
     private string $nom;
     private string $prenom;
@@ -120,6 +121,40 @@ class Joueur {
     public function setStatut(?JoueurStatut $statut): void
     {
         $this->statut = $statut;
+    }
+
+    // Permettre que la classe joueurs puisse être converti en json
+    public function jsonSerialize(): array {
+        return [
+            'id' => $this->joueurId,
+            'nom' => $this->nom,
+            'prenom' => $this->prenom,
+            'numero_licence' => $this->numeroDeLicence,
+            'date_naissance' => $this->dateDeNaissance->format('Y-m-d'),
+            'taille' => $this->tailleEnCm,
+            'poids' => $this->poidsEnKg,
+            'statut' => $this->statut->name
+        ];
+    }
+
+    // Créer un nouveau joueur utilisant l'array convertie du body json fournie avec post
+    public static function buildJoueurFromArray(array $data) {
+        if(sizeof($data) != 8 && sizeof($data) != 7) {
+            throw new InvalidArgumentException('Vous devez modifier toutes les champs de la ressource.');
+        }
+
+        
+
+        return new self(
+            $data['id'],
+            $data['nom'],
+            $data['prenom'],
+            $data['numero_licence'],
+            new DateTime($data['date_naissance']),
+            $data['taille'],
+            $data['poids'],
+            isset($data['statut']) ? JoueurStatut::fromName($data['statut']) : null
+        );
     }
 }
 

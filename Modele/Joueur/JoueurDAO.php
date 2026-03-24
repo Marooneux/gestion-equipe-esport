@@ -3,7 +3,7 @@
 namespace R301\Modele\Joueur;
 
 use DateTime;
-use PDO;
+use PDO, PDOException;
 use R301\Modele\DatabaseHandler;
 
 class JoueurDAO {
@@ -34,16 +34,18 @@ class JoueurDAO {
         );
     }
 
-    public function selectAllJoueurs(): array {
+
+    public function selectAllJoueurs() {
         $query = 'SELECT * FROM joueur';
-        $statement=$this->database->pdo()->prepare($query);
-        if ($statement->execute()){
+        try {
+            $statement=$this->database->pdo()->prepare($query);
+            $statement->execute();
             return array_map(
                 function($joueur) { return $this->mapToJoueur($joueur); },
                 $statement->fetchAll(PDO::FETCH_ASSOC)
             );
-        } else {
-            exit();
+        } catch(PDOException $e) {
+            throw $e;
         }
     }
 
@@ -61,14 +63,15 @@ class JoueurDAO {
         }
     }
 
-    public function selectJoueurById(int $joueurId): Joueur {
+    public function selectJoueurById(int $joueurId) {
         $query = 'SELECT * FROM joueur WHERE joueur_id = :joueur_id';
         $statement=$this->database->pdo()->prepare($query);
         $statement->bindValue(':joueur_id', $joueurId);
-        if ($statement->execute()){
-             return $this->mapToJoueur($statement->fetch(PDO::FETCH_ASSOC));
+        $res = $statement->execute();
+        if ($statement->rowCount() > 0) {
+            return $this->mapToJoueur($statement->fetch(PDO::FETCH_ASSOC));
         } else {
-            exit();
+            return false;
         }
     }
 
@@ -77,16 +80,22 @@ class JoueurDAO {
             INSERT INTO joueur(numero_licence,nom,prenom,date_naissance,taille,poids,statut)
             VALUES (:numero_licence,:nom,:prenom,:date_naissance,:taille,:poids,:statut)
         ';
-        $statement=$this->database->pdo()->prepare($query);
-        $statement->bindValue(':numero_licence', $joueurACreer->getNumeroDeLicence());
-        $statement->bindValue(':nom', $joueurACreer->getNom());
-        $statement->bindValue(':prenom', $joueurACreer->getPrenom());
-        $statement->bindValue(':date_naissance', $joueurACreer->getDateDeNaissance()->format('Y-m-d'));
-        $statement->bindValue(':taille', $joueurACreer->getTailleEnCm());
-        $statement->bindValue(':poids', $joueurACreer->getPoidsEnKg());
-        $statement->bindValue(':statut', $joueurACreer->getStatut()->name);
 
-        return $statement->execute();
+         try {
+            $statement=$this->database->pdo()->prepare($query);
+            $statement->bindValue(':numero_licence', $joueurACreer->getNumeroDeLicence());
+            $statement->bindValue(':nom', $joueurACreer->getNom());
+            $statement->bindValue(':prenom', $joueurACreer->getPrenom());
+            $statement->bindValue(':date_naissance', $joueurACreer->getDateDeNaissance()->format('Y-m-d'));
+            $statement->bindValue(':taille', $joueurACreer->getTailleEnCm());
+            $statement->bindValue(':poids', $joueurACreer->getPoidsEnKg());
+            $statement->bindValue(':statut', $joueurACreer->getStatut()->name);
+
+            return $statement->execute();
+        } catch(PDOException $e) {
+            throw $e;
+        }
+
     }
 
     public function updateJoueur(Joueur $joueurAModifier): bool {
@@ -100,24 +109,39 @@ class JoueurDAO {
                     poids = :poids,
                     statut = :statut
                   WHERE joueur_id = :joueur_id';
-        $statement=$this->database->pdo()->prepare($query);
 
-        $statement->bindValue(':joueur_id', $joueurAModifier->getJoueurId());
-        $statement->bindValue(':numero_licence', $joueurAModifier->getNumeroDeLicence());
-        $statement->bindValue(':nom', $joueurAModifier->getNom());
-        $statement->bindValue(':prenom', $joueurAModifier->getPrenom());
-        $statement->bindValue(':date_naissance', $joueurAModifier->getDateDeNaissance()->format('Y-m-d'));
-        $statement->bindValue(':taille', $joueurAModifier->getTailleEnCm());
-        $statement->bindValue(':poids', $joueurAModifier->getPoidsEnKg());
-        $statement->bindValue(':statut', $joueurAModifier->getStatut()->name);
-
-        return $statement->execute();
+        try {
+            $statement=$this->database->pdo()->prepare($query);
+    
+            $statement->bindValue(':joueur_id', $joueurAModifier->getJoueurId());
+            $statement->bindValue(':numero_licence', $joueurAModifier->getNumeroDeLicence());
+            $statement->bindValue(':nom', $joueurAModifier->getNom());
+            $statement->bindValue(':prenom', $joueurAModifier->getPrenom());
+            $statement->bindValue(':date_naissance', $joueurAModifier->getDateDeNaissance()->format('Y-m-d'));
+            $statement->bindValue(':taille', $joueurAModifier->getTailleEnCm());
+            $statement->bindValue(':poids', $joueurAModifier->getPoidsEnKg());
+            $statement->bindValue(':statut', $joueurAModifier->getStatut()->name);
+    
+            $statement->execute();
+            if($statement->rowCount() > 0) {
+                return true;
+            } else {
+                return false;
+            }
+        } catch(PDOException $e) {
+            throw $e;
+        }
     }
 
     public function supprimerJoueur(string $joueurId) : bool {
         $query = 'DELETE FROM joueur WHERE joueur_id = :joueur_id';
         $statement=$this->database->pdo()->prepare($query);
         $statement->bindValue(':joueur_id', $joueurId);
-        return $statement->execute();
+        $statement->execute();
+        if($statement->rowCount() > 0) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }

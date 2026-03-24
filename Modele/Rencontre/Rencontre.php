@@ -1,9 +1,10 @@
 <?php
 
 namespace R301\Modele\Rencontre;
-use DateTime;
+use DateTime, DateTimeZone;
+use InvalidArgumentException;
 
-class Rencontre {
+class Rencontre implements \JsonSerializable {
     private int $rencontreId;
     private DateTime $dateEtHeure;
     private string $equipeAdverse;
@@ -16,7 +17,7 @@ class Rencontre {
         string $equipeAdverse,
         string $adresse,
         ?RencontreLieu $lieu,
-        RencontreResultat $resultat = null,
+        ?RencontreResultat $resultat = null,
         int $rencontreId = 0
     ) {
         $this->rencontreId = $rencontreId;
@@ -99,5 +100,38 @@ class Rencontre {
 
     public function estPassee(): bool {
         return $this->dateEtHeure < new DateTime();
+    }
+
+    public function jsonSerialize(): array {
+        return [
+            'id' => $this->rencontreId,
+            'date_heure' => $this->dateEtHeure,
+            'equipe_adverse' => $this->equipeAdverse,
+            'adresse' => $this->adresse,
+            'lieu_recontre' => $this->lieu?->name,
+            'resultat' => $this->resultat?->name
+        ];
+    }
+
+    public static function buildRencontreFromArray(array $data) {
+        if(sizeof($data) != 6) {
+            throw new InvalidArgumentException('Vous devez modifier toutes les champs de la ressource.');
+        }
+
+        $dateTimeArray = $data["date_heure"];
+        $datetime = new Datetime($dateTimeArray["date"], new DateTimeZone($dateTimeArray["timezone"]));
+
+        if ($datetime < date("Y-m-d H:i:s")) {
+            return false;
+        }
+
+        return new self(
+            $datetime,
+            $data['equipe_adverse'],
+            $data['adresse'],
+            RencontreLieu::fromName($data['lieu_recontre']),
+            RencontreResultat::fromName($data['resultat']),
+            $data['id']
+        );
     }
 }

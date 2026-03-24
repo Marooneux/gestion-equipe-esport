@@ -6,10 +6,7 @@ use DateTime;
 use PDO;
 use R301\Modele\DatabaseHandler;
 use R301\Modele\Joueur\JoueurDAO;
-use R301\Modele\Rencontre\Rencontre;
 use R301\Modele\Rencontre\RencontreDAO;
-use R301\Modele\Rencontre\RencontreLieu;
-use R301\Modele\Rencontre\RencontreResultat;
 
 class ParticipationDAO {
     private static ?ParticipationDAO $instance = null;
@@ -43,6 +40,7 @@ class ParticipationDAO {
 
     public function selectAllParticipations() {
         $query = 'SELECT * FROM participation';
+        
         $statement=$this->database->pdo()->prepare($query);
         if ($statement->execute()){
             return array_map(
