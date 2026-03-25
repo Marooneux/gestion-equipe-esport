@@ -1,20 +1,20 @@
 <h1>Ajouter un joueur</h1>
 <?php
-use R301\Controleur\JoueurControleur;
+require_once __DIR__ . '/../../Controleur/ApiClient.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $joueurControleur = JoueurControleur::getInstance();
-    $dateDeNaissance = new DateTime($_POST['dateDeNaissance']);
-    $result = $joueurControleur->ajouterJoueur(
-        $_POST['nom'],
-        $_POST['prenom'],
-        $_POST['numeroDeLicence'],
-        $dateDeNaissance,
-        (int) $_POST['tailleEnCm'],
-        (int) $_POST['poidsEnKg'],
-        $_POST['statut']
-    );
-    if ($result) {
+    $donnees = [
+        'id' => 0,
+        'nom' => $_POST['nom'],
+        'prenom' => $_POST['prenom'],
+        'numero_licence' => $_POST['numeroDeLicence'],
+        'date_naissance' => $_POST['dateDeNaissance'],
+        'taille' => (int) $_POST['tailleEnCm'],
+        'poids' => (int) $_POST['poidsEnKg'],
+        'statut' => $_POST['statut'],
+    ];
+    $reponse = api_post('/joueurs', $donnees);
+    if ($reponse['status_code'] === 201) {
         header('Location: /joueur');
         exit;
     }
