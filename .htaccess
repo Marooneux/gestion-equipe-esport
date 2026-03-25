@@ -1,3 +1,9 @@
+RewriteEngine On
+
+# URL rewriting
+RewriteRule ^auth/login/?$ api/get_token.php [L]
+RewriteRule ^auth/verify/?$ api/verify_token.php [L]
+
 # Block access to sensitive files
 <Files ".env">
     Require all denied

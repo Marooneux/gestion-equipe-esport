@@ -1,93 +1,167 @@
 # r401_team_management_auth
 
+Service d'authentification JWT pour la gestion de l'équipe de sport dans le cadre du projet en R401. Expose une API REST permettant d'obtenir et de vérifier des tokens JWT.
 
-
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-* [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+## URL de base
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.info.iut-tlse3.fr/wcl5016a/r401_team_management_auth.git
-git branch -M main
-git push -uf origin main
+https://r401auth.alwaysdata.net
 ```
 
-## Integrate with your tools
+## Endpoints
 
-* [Set up project integrations](https://gitlab.info.iut-tlse3.fr/wcl5016a/r401_team_management_auth/-/settings/integrations)
+### POST /auth/login
 
-## Collaborate with your team
+Authentifie un utilisateur et retourne un token JWT valable **1 heure**.
 
-* [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+**Corps de la requête (JSON) :**
+```json
+{
+  "login": "nom_utilisateur",
+  "password": "mot_de_passe"
+}
+```
 
-## Test and Deploy
+**Réponse succès (200) :**
+```json
+{
+  "status_code": 200,
+  "status_message": "Le token a été créer",
+  "data": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
 
-Use the built-in continuous integration in GitLab.
+**Réponse erreur (403) :**
+```json
+{
+  "status_code": 403,
+  "status_message": "L'utilisateur et/ou le mot de passe sont incorrectes",
+  "data": null
+}
+```
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+---
 
-***
+### POST /auth/verify
 
-# Editing this README
+Vérifie la validité d'un token JWT (signature + expiration).
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+**Corps de la requête (JSON) :**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
 
-## Suggestions for a good README
+**Réponse succès (200) :**
+```json
+{
+  "status_code": 200,
+  "status_message": "Le token est valide",
+  "data": true
+}
+```
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+**Réponse erreur (400) :**
+```json
+{
+  "status_code": 400,
+  "status_message": "Le token n'est pas valide",
+  "data": null
+}
+```
 
-## Name
-Choose a self-explaining name for your project.
+---
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+## Exemples de requêtes
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+### cURL
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+```bash
+# Obtenir un token
+curl -X POST https://r401auth.alwaysdata.net/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"login": "admin", "password": "monmotdepasse"}'
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+# Vérifier un token
+curl -X POST https://r401auth.alwaysdata.net/auth/verify \
+  -H "Content-Type: application/json" \
+  -d '{"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}'
+```
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+### JavaScript (fetch)
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+```js
+// Obtenir un token
+const res = await fetch('https://r401auth.alwaysdata.net/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ login: 'admin', password: 'monmotdepasse' })
+});
+const { data: token } = await res.json();
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+// Vérifier un token
+const res = await fetch('https://r401auth.alwaysdata.net/auth/verify', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ token })
+});
+const result = await res.json();
+```
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+### PHP (cURL)
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+```php
+// Obtenir un token
+$ch = curl_init('https://r401auth.alwaysdata.net/auth/login');
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['login' => 'admin', 'password' => 'monmotdepasse']));
+$response = json_decode(curl_exec($ch));
+$token = $response->data;
+```
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+---
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+## Structure du projet
 
-## License
-For open source projects, say how it is licensed.
+```
+r401_team_management_auth/
+├── api/
+│   ├── get_token.php       # Logique de l'endpoint /auth/login
+│   └── verify_token.php    # Logique de l'endpoint /auth/verify
+├── src/
+│   ├── modele/
+│   │   ├── DatabaseHandler.php  # Connexion PDO (singleton)
+│   │   └── verifAuth.php        # Vérification des credentials en BD
+│   └── utils/
+│       └── jwt_utils.php        # Génération et validation JWT (HS256)
+├── .env                    # Variables d'environnement (non versionné)
+├── .htaccess               # Réécriture d'URL + protection fichiers sensibles
+└── schema.sql              # Schéma de la base de données
+```
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+## Payload JWT
+
+Le token généré contient les informations suivantes :
+
+| Champ | Description |
+|-------|-------------|
+| `role` | Rôle de l'utilisateur en base |
+| `user_id` | ID de l'utilisateur en base |
+| `exp` | Timestamp d'expiration (1h après émission) |
+
+## Installation locale
+
+1. Cloner le dépôt et le placer dans le répertoire web (ex: `laragon/www/`)
+2. Créer un fichier `.env` à la racine :
+```ini
+DB_SERVER=localhost
+DB_NAME=nom_de_la_base
+DB_LOGIN=utilisateur
+DB_PASSWORD=motdepasse
+JWT_SECRET=votre_secret
+```
+3. Importer `schema.sql` dans votre base de données
+4. S'assurer que `mod_rewrite` est activé (Apache)
