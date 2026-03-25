@@ -24,6 +24,7 @@ if (!empty($_GET['statut'])) {
     }
     $joueurs = $joueursFiltres;
 }
+
 ?>
 
 <h1>Joueurs</h1>
