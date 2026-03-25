@@ -12,11 +12,17 @@ switch ($http_method){
         $postedData = file_get_contents('php://input');
         $data = json_decode($postedData, true);
 
-        $login = $data["login"];
-        $password = $data["password"];
+        $login = $data["login"] ?? null;
+        $password = $data["password"] ?? null;
+
+        if (empty($login) || empty($password)) {
+            deliver_response(400, "Le login et le mot de passe sont obligatoires");
+            break;
+        }
+
         $utilisateurValide = $verifAuth->verifAuth($login, $password);
         if ($utilisateurValide == false) {
-            deliver_response(400, "L'utilisateur et/ou le mot de passe sont incorrectes");
+            deliver_response(403, "L'utilisateur et/ou le mot de passe sont incorrectes");
         } else {
             deliver_response(200, "Le token a été créer", $utilisateurValide);
         }

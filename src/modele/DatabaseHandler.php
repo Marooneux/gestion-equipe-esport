@@ -11,10 +11,11 @@ class DatabaseHandler {
 
     private function __construct(){
         try{
-            $this->server = "mysql-r401auth.alwaysdata.net";
-            $this->db = "r401auth_users";
-            $this->login = "r401auth";
-            $this->mdp = "projetr401";
+            $env = parse_ini_file(__DIR__ . "/../../.env");
+            $this->server = $env["DB_SERVER"];
+            $this->db = $env["DB_NAME"];
+            $this->login = $env["DB_LOGIN"];
+            $this->mdp = $env["DB_PASSWORD"];
             $this->linkpdo=new PDO("mysql:host=".$this->server.";dbname=".$this->db,$this->login,$this->mdp);
         }catch(Exception $e){
             die("Erreur : ".$e->getMessage());
