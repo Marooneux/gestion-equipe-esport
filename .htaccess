@@ -1,0 +1,8 @@
+# Block access to sensitive files
+<Files ".env">
+    Require all denied
+</Files>
+
+<Files "*.sql">
+    Require all denied
+</Files>
