@@ -1,22 +1,28 @@
 <?php
 namespace R301\Controleur;
 
+use DateTime;
+use DateTimeZone;
+use R301\Modele\Joueur\Joueur;
+use R301\Modele\Joueur\JoueurStatut;
 use R301\Modele\Participation\FeuilleDeMatch;
 use R301\Modele\Participation\Participation;
-use R301\Modele\Participation\ParticipationDAO;
 use R301\Modele\Participation\Performance;
 use R301\Modele\Participation\Poste;
 use R301\Modele\Participation\TitulaireOuRemplacant;
+use R301\Modele\Rencontre\Rencontre;
+use R301\Modele\Rencontre\RencontreLieu;
+use R301\Modele\Rencontre\RencontreResultat;
+
+require_once __DIR__ . '/ApiClient.php';
 
 class ParticipationControleur {
     private static ?ParticipationControleur $instance = null;
-    private readonly ParticipationDAO $participations;
     private readonly JoueurControleur $joueurs;
     private readonly RencontreControleur $rencontres;
 
     private function __construct(JoueurControleur $joueurs) {
         $this->joueurs = $joueurs;
-        $this->participations = ParticipationDAO::getInstance();
         $this->rencontres = RencontreControleur::getInstance();
     }
 
@@ -35,106 +41,126 @@ class ParticipationControleur {
         return self::$instance;
     }
 
+    private function buildJoueurFromData(array $data): Joueur {
+        return new Joueur(
+            $data['id'],
+            $data['nom'],
+            $data['prenom'],
+            $data['numero_licence'],
+            new DateTime($data['date_naissance']),
+            $data['taille'],
+            $data['poids'],
+            isset($data['statut']) ? JoueurStatut::fromName($data['statut']) : null
+        );
+    }
+
+    private function buildRencontreFromData(array $data): Rencontre {
+        $dateTimeData = $data['date_heure'];
+        if (is_array($dateTimeData)) {
+            $datetime = new DateTime($dateTimeData['date'], new DateTimeZone($dateTimeData['timezone']));
+        } else {
+            $datetime = new DateTime($dateTimeData);
+        }
+        return new Rencontre(
+            $datetime,
+            $data['equipe_adverse'],
+            $data['adresse'],
+            isset($data['lieu_recontre']) && $data['lieu_recontre'] !== null ? RencontreLieu::fromName($data['lieu_recontre']) : null,
+            isset($data['resultat']) && $data['resultat'] !== null ? RencontreResultat::fromName($data['resultat']) : null,
+            $data['id']
+        );
+    }
+
+    private function buildParticipationFromApiData(array $data): Participation {
+        $joueur = $this->buildJoueurFromData($data['joueur']);
+        $rencontre = $this->buildRencontreFromData($data['rencontre']);
+
+        return new Participation(
+            $data['id'],
+            $joueur,
+            $rencontre,
+            TitulaireOuRemplacant::fromName($data['titularité']),
+            isset($data['performance']) && $data['performance'] !== null ? Performance::fromName($data['performance']) : null,
+            Poste::fromName($data['poste'])
+        );
+    }
+
     public function lejoueurEstDejaSurLaFeuilleDeMatch(int $rencontreId, int $joueurId) : bool {
-        return $this->participations->lejoueurEstDejaSurLaFeuilleDeMatch($rencontreId, $joueurId);
+        $feuille = $this->getFeuilleDeMatch($rencontreId);
+        foreach ($feuille->getParticipants() as $participation) {
+            if ($participation->getParticipant()->getJoueurId() === $joueurId) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public function listerToutesLesParticipations() : array {
-        return $this->participations->selectAllParticipations();
+        $reponse = api_get('/feuilledematche');
+        if (!isset($reponse['data']) || !is_array($reponse['data'])) return [];
+        return array_map(fn($d) => $this->buildParticipationFromApiData($d), $reponse['data']);
     }
 
     public function getFeuilleDeMatch(int $rencontreId) : FeuilleDeMatch {
-        return new FeuilleDeMatch($this->participations->selectParticipationsByRencontreId($rencontreId));
+        $toutesLesParticipations = $this->listerToutesLesParticipations();
+        $participationsDuMatch = array_filter(
+            $toutesLesParticipations,
+            fn($p) => $p->getRencontre()->getRencontreId() === $rencontreId
+        );
+        return new FeuilleDeMatch(array_values($participationsDuMatch));
     }
 
-    public function assignerUnParticipant (
+    public function assignerUnParticipant(
         int $joueurId,
         int $rencontreId,
         Poste $poste,
         TitulaireOuRemplacant $titulaireOuRemplacant
     ) : bool {
-        if ($this->participations->lePosteEstDejaOccupe($rencontreId, $poste, $titulaireOuRemplacant)
-            || $this->lejoueurEstDejaSurLaFeuilleDeMatch($rencontreId, $joueurId)
-        ) {
-            return false;
-        } else {
-            $joueur = $this->joueurs->getJoueurById($joueurId);
-            $rencontre = $this->rencontres->getRencontreById($rencontreId);
-
-            $participationACreer = new Participation(
-                0,
-                $joueur,
-                $rencontre,
-                $titulaireOuRemplacant,
-                null,
-                $poste
-            );
-
-            return $this->participations->insertParticipation($participationACreer);
-        }
+        $donnees = [
+            'joueur_id' => $joueurId,
+            'rencontre_id' => $rencontreId,
+            'poste' => $poste->name,
+            'titularité' => $titulaireOuRemplacant->name
+        ];
+        $reponse = api_post('/feuilledematche', $donnees);
+        return isset($reponse['status_code']) && $reponse['status_code'] === 201;
     }
 
     public function assignerUnParticipantByArray(Participation $participantAAjouter) {
-        $joueurId = $participantAAjouter->getParticipant()->getJoueurId();
-        $rencontreId = $participantAAjouter->getRencontre()->getRencontreId();
-        $poste = $participantAAjouter->getPoste();
-        $titulaireOuRemplacant = $participantAAjouter->getTitulaireOuRemplacant();
-        if ($this->participations->lePosteEstDejaOccupe($rencontreId, $poste, $titulaireOuRemplacant)
-            || $this->lejoueurEstDejaSurLaFeuilleDeMatch($rencontreId, $joueurId)
-        ) {
-            return false;
-        }
+        return $this->assignerUnParticipant(
+            $participantAAjouter->getParticipant()->getJoueurId(),
+            $participantAAjouter->getRencontre()->getRencontreId(),
+            $participantAAjouter->getPoste(),
+            $participantAAjouter->getTitulaireOuRemplacant()
+        );
     }
 
-    public function insertUneParticpation(Participation $participationAInserer) {
-
-    }
-
+    // Non disponible : pas d'endpoint PUT /feuilledematche/{id} dans le backend
     public function modifierParticipation(
         int $participationId,
         Poste $poste,
         TitulaireOuRemplacant $titulaireOuRemplacant,
         int $joueurId
     ) : bool {
-        $participationAModifier = $this->participations->selectParticipationById($participationId);
-
-        if ($participationAModifier->getParticipant()->getJoueurId() != $joueurId) {
-            $participationAModifier->setParticipant($this->joueurs->getJoueurById($joueurId));
-        }
-
-        $participationAModifier->setPoste($poste);
-        $participationAModifier->setTitulaireOuRemplacant($titulaireOuRemplacant);
-
-        return $this->participations->updateParticipation($participationAModifier);
+        return false;
     }
 
+    // Non disponible : pas d'endpoint DELETE /feuilledematche/{id} dans le backend
     public function supprimerLaParticipation(int $participationId) : bool {
-        return $this->participations->deleteParticipation($participationId);
+        return false;
     }
 
+    // Non disponible : pas d'endpoint pour les performances dans le backend
     public function mettreAJourLaPerformance(
         int $participationId,
         string $performance
     ) : bool {
-        $participationAEvaluer = $this->participations->selectParticipationById($participationId);
-
-        if (!$participationAEvaluer->getRencontre()->estPassee()) {
-            return false;
-        }
-
-        $participationAEvaluer->setPerformance(Performance::fromName($performance));
-        return $this->participations->updatePerformance($participationAEvaluer);
+        return false;
     }
 
+    // Non disponible : pas d'endpoint pour les performances dans le backend
     public function supprimerLaPerformance(int $participationId) : bool {
-        $participationAEvaluer = $this->participations->selectParticipationById($participationId);
-
-        if (!$participationAEvaluer->getRencontre()->estPassee()) {
-            return false;
-        }
-
-        $participationAEvaluer->setPerformance(null);
-        return $this->participations->updatePerformance($participationAEvaluer);
+        return false;
     }
 
     public function buildParticipationFromArray($data) {
