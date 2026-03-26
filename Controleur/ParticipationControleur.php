@@ -84,10 +84,8 @@ class ParticipationControleur {
         ) {
             return false;
         }
-    }
 
-    public function insertUneParticpation(Participation $participationAInserer) {
-
+        return $this->participations->insertParticipation($participantAAjouter);
     }
 
     public function modifierParticipation(
@@ -108,32 +106,49 @@ class ParticipationControleur {
         return $this->participations->updateParticipation($participationAModifier);
     }
 
+    public function modifierParticipationByArray(Participation $participationAModifier) {
+        $joueurId = $participationAModifier->getParticipationId();
+        $poste = $participationAModifier->getPoste();
+        $titulaireOuRemplacant = $participationAModifier->getTitulaireOuRemplacant();
+
+        if ($participationAModifier->getParticipant()->getJoueurId() != $joueurId) {
+            $participationAModifier->setParticipant($this->joueurs->getJoueurById($joueurId));
+        }
+
+        $performance = $participationAModifier->getPerformance();
+        
+        print_r(json_encode($participationAModifier));
+
+        if ($performance != null) {
+            $this->mettreAJourLaPerformance($participationAModifier);
+        }
+
+        $participationAModifier->setPoste($poste);
+        $participationAModifier->setTitulaireOuRemplacant($titulaireOuRemplacant);
+
+        return $this->participations->updateParticipation($participationAModifier);
+    } 
+
     public function supprimerLaParticipation(int $participationId) : bool {
         return $this->participations->deleteParticipation($participationId);
     }
 
     public function mettreAJourLaPerformance(
-        int $participationId,
-        string $performance
+        Participation $participationAEvaluer,
     ) : bool {
-        $participationAEvaluer = $this->participations->selectParticipationById($participationId);
 
         if (!$participationAEvaluer->getRencontre()->estPassee()) {
             return false;
         }
-
-        $participationAEvaluer->setPerformance(Performance::fromName($performance));
         return $this->participations->updatePerformance($participationAEvaluer);
     }
 
-    public function supprimerLaPerformance(int $participationId) : bool {
-        $participationAEvaluer = $this->participations->selectParticipationById($participationId);
+    public function supprimerLaPerformance(Participation $participationAEvaluer) : bool {
 
         if (!$participationAEvaluer->getRencontre()->estPassee()) {
             return false;
         }
 
-        $participationAEvaluer->setPerformance(null);
         return $this->participations->updatePerformance($participationAEvaluer);
     }
 
@@ -146,7 +161,7 @@ class ParticipationControleur {
             $joueur,
             $rencontre,
             TitulaireOuRemplacant::fromName($data['titularité']),
-            Performance::fromName($data['performance']),
+            isset($data['performance']) == true ? Performance::fromName($data['performance']) : null,
             Poste::fromName($data['poste'])
         );
     }
