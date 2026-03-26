@@ -197,15 +197,63 @@ if(rtrim($resource, "/") == "/feuilledematche") {
             $data = json_decode($body, true);
             try {
             $participation = $participationsController->buildParticipationFromArray($data);
-                $participationsController->assignerUnParticipantByArray($participation);
-                deliver_response(201, "Données crée avec succés.");
+                if ($participationsController->assignerUnParticipantByArray($participation)) {
+                    deliver_response(201, "Données crée avec succés.");
+                } else {
+                    deliver_response(400, "Problem d'insertion");
+                }
             } catch(PDOException $e) {
                 deliver_response(500, "Erreur lors de l'insertion du joueur");
             }
             break;
             
     }
+}
 
+if(preg_match('#^/feuilledematche/([0-9]+)$#', $resource, $matches) == 1) {
+    #Get the id
+    $id = $matches[1];
+
+    switch($http_method) {
+        case 'GET':
+            $data = $participationsController->getFeuilleDeMatch($id);
+
+            if($data == false) {
+                deliver_response(404, "Le joueurs d'id $id n'existe pas");
+            } else {
+                deliver_response(200, "Données récuperée avec succèes", $data);
+            }
+            break;
+        case 'PUT':
+            $body = file_get_contents("php://input");
+            $data = json_decode($body, true);
+            try {
+                $participationAModifier = $participationsController->buildParticipationFromArray($data);
+                
+                $res = $participationsController->modifierParticipationByArray($participationAModifier);
+
+                if($res) {
+                    deliver_response(200, "Données du participation modifié avec succées.");
+                } else {
+                    deliver_response(404, "Participation d'id $id n'existe pas");
+                }
+            } catch(PDOException $e) {
+                deliver_response(500, "Erreur pendand la modification de la ressource");
+            } catch(InvalidArgumentException $e) {
+                deliver_response(400, $e->getMessage());
+            }
+            break;
+        case 'DELETE':
+            $data = $participationsController->supprimerLaParticipation($id);
+            print_r($data);
+
+            if($data == false) {
+                deliver_response(404, "Performance d'id $id n'existe pas");
+                } else {
+                deliver_response(200, "Performance d'id $id supprimée avec succèes");
+            }
+            break;
+    }
 }
 
 ?>
