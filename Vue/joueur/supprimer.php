@@ -1,8 +1,9 @@
 <?php
-require_once __DIR__ . '/../../Controleur/ApiClient.php';
+
+use R301\Controleur\JoueurControleur;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
-    api_delete('/joueurs/' . $_POST['id']);
+    JoueurControleur::getInstance()->supprimerJoueur((int) $_POST['id']);
 }
 
 header('Location: /joueur');
