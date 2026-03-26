@@ -27,10 +27,6 @@ else :
     <div class="etat-feuille-de-match feuille-de-match-complete">
         COMPLÈTE
     </div>
-    <?php else: ?>
-    <div class="etat-feuille-de-match feuille-de-match-incomplete">
-        INCOMPLÈTE
-    </div>
     <?php endif; ?>
 </div>
 
