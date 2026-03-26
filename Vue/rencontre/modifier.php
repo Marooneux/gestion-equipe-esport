@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
     if (!isset($_GET['id'])) {
         header("Location: /rencontre");
     } else {
-        $rencontre = $controleur->getRenconterById($_GET['id']);
+        $rencontre = $controleur->getRencontreById($_GET['id']);
 
         $formulaire = new Formulaire("/rencontre/modifier?id=" . $rencontre->getRencontreId());
         $formulaire->setDateTime("Date", "dateHeure", date("Y-m-d H:i"), $rencontre->getDateEtHeure()->format("Y-m-d H:i"));
