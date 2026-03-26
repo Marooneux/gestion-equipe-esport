@@ -50,20 +50,20 @@ $joueurs = $controleur->rechercherLesJoueurs(
 
         <?php foreach ($joueurs as $joueur) { ?>
             <tr>
-                <td><?= $joueur->getNumeroDeLicence() ?></td>
-                <td><?= $joueur->getNom() ?></td>
-                <td><?= $joueur->getPrenom() ?></td>
-                <td><?= $joueur->getDateDeNaissance()->format('d/m/Y') ?></td>
-                <td><?= $joueur->getTailleEnCm() ?> cm</td>
-                <td><?= $joueur->getPoidsEnKg() ?> kg</td>
-                <td><?= $joueur->getStatut()->name ?></td>
+                <td><?= $joueur['numero_licence'] ?></td>
+                <td><?= $joueur['nom'] ?></td>
+                <td><?= $joueur['prenom'] ?></td>
+                <td><?= date('d/m/Y', strtotime($joueur['date_naissance'])) ?></td>
+                <td><?= $joueur['taille'] ?> cm</td>
+                <td><?= $joueur['poids'] ?> kg</td>
+                <td><?= $joueur['statut'] ?></td>
                 <td class="actions">
-                    <form action="joueur/modifier" method="get"><button class="update" type="submit" name="id" value="<?= $joueur->getJoueurId() ?>">Modifier</button></form>
+                    <form action="joueur/modifier" method="get"><button class="update" type="submit" name="id" value="<?= $joueur['id'] ?>">Modifier</button></form>
                     <form action="joueur/supprimer" method="post">
-                        <input type="hidden" name="id" value="<?= $joueur->getJoueurId() ?>">
+                        <input type="hidden" name="id" value="<?= $joueur['id'] ?>">
                         <button class="delete" type="submit" onclick="return confirm('Voulez-vous vraiment supprimer ce joueur?')">Supprimer</button>
                     </form>
-                    <form action="joueur/commentaire" method="get"><button class="info" type="submit" name="id" value="<?= $joueur->getJoueurId() ?>">Commentaires</button></form>
+                    <form action="joueur/commentaire" method="get"><button class="info" type="submit" name="id" value="<?= $joueur['id'] ?>">Commentaires</button></form>
                 </td>
             </tr>
         <?php } ?>

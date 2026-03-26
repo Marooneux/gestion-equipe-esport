@@ -2,8 +2,6 @@
 
 use R301\Controleur\JoueurControleur;
 use R301\Controleur\ParticipationControleur;
-use R301\Modele\Participation\Poste;
-use R301\Modele\Participation\TitulaireOuRemplacant;
 use R301\Vue\Component\Select;
 
 $controleur = ParticipationControleur::getInstance();
@@ -12,12 +10,20 @@ $joueurControleur = JoueurControleur::getInstance();
 if (!isset($_GET['id'])) :
     header("Location: /rencontre");
 else :
-    $feuilleDeMatch = $controleur->getFeuilleDeMatch($_GET['id']);
-    $joueursSelectionnables = $joueurControleur->listerLesJoueursSelectionnablesPourUnMatch($_GET['id']);
+    $feuille = $controleur->getFeuilleDeMatch((int) $_GET['id']);
+    $joueursSelectionnables = $joueurControleur->listerLesJoueursSelectionnablesPourUnMatch((int) $_GET['id']);
+
+    function joueurToString(array $joueur): string {
+        $str = $joueur['numero_licence'] . ' : ' . $joueur['nom'] . ' ' . $joueur['prenom'];
+        if ($joueur['statut'] !== 'ACTIF') {
+            $str .= ' (' . $joueur['statut'] . ')';
+        }
+        return $str;
+    }
 ?>
 <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding-right: 30px">
     <h1>Feuille de Match</h1>
-    <?php if($feuilleDeMatch->estComplete()) : ?>
+    <?php if($controleur->feuilleEstComplete($feuille)) : ?>
     <div class="etat-feuille-de-match feuille-de-match-complete">
         COMPLÈTE
     </div>
@@ -29,10 +35,10 @@ else :
 </div>
 
 <div class="container" style="display: flex; flex-direction: row; justify-content: space-between">
-    <?php foreach (TitulaireOuRemplacant::cases() as $titulaireOuRemplacant) : ?>
+    <?php foreach (['TITULAIRE', 'REMPLACANT'] as $titulaireOuRemplacant) : ?>
     <table style="width: 49.5%">
         <caption>
-            <?php echo $titulaireOuRemplacant->name.'S' ?>
+            <?php echo $titulaireOuRemplacant . 'S' ?>
         </caption>
         <tr>
             <th style="width:15%">Poste</th>
@@ -42,35 +48,28 @@ else :
         </tr>
 
         <?php
-            foreach (Poste::cases() as $poste):
-                $participant = $feuilleDeMatch->getParticipantAuPoste($poste, $titulaireOuRemplacant);
-                $selectedValue = null;
+            foreach (['TOPLANE', 'JUNGLE', 'MIDLANE', 'ADCARRY', 'SUPPORT'] as $poste):
+                $participant = $controleur->getParticipantAuPoste($feuille, $poste, $titulaireOuRemplacant);
+
                 $selectableValues = [];
-
-                foreach ($joueursSelectionnables as $joueursSelectionnable) {
-                    $selectableValues[$joueursSelectionnable->getJoueurId()] = $joueursSelectionnable->toString();
+                foreach ($joueursSelectionnables as $j) {
+                    $selectableValues[$j['id']] = joueurToString($j);
                 }
-
                 if ($participant !== null) {
-                    $selectableValues[$participant->getParticipant()->getJoueurId()] = $participant->getParticipant()->toString();
-                    $selectedValue = $participant->getParticipant()->toString();
+                    $selectableValues[$participant['joueur']['id']] = joueurToString($participant['joueur']);
                 }
 
-                $select = new Select(
-                        $selectableValues,
-                        "joueurId",
-                        null,
-                        $selectedValue,
-                );
+                $selectedValue = $participant !== null ? joueurToString($participant['joueur']) : null;
+                $select = new Select($selectableValues, "joueurId", null, $selectedValue);
         ?>
         <form action="/feuilleDeMatch/modifier" method="post">
             <tr>
-                <input type="hidden" name="participationId" value="<?php if($participant !== null) echo $participant->getParticipationId(); ?>" />
-                <input type="hidden" name="poste" value="<?php echo $poste->name ?>" />
+                <input type="hidden" name="participationId" value="<?php if($participant !== null) echo $participant['id']; ?>" />
+                <input type="hidden" name="poste" value="<?php echo $poste ?>" />
                 <input type="hidden" name="rencontreId" value="<?php echo $_GET['id'] ?>" />
-                <input type="hidden" name="titulaireOuRemplacant" value="<?php echo $titulaireOuRemplacant->name ?>" />
-                <td><?php echo $poste->name; ?></td>
-                <td><?php  if($participant !== null) echo $participant->getParticipant()->toString() ?></td>
+                <input type="hidden" name="titulaireOuRemplacant" value="<?php echo $titulaireOuRemplacant ?>" />
+                <td><?php echo $poste; ?></td>
+                <td><?php if($participant !== null) echo joueurToString($participant['joueur']); ?></td>
                 <td><?php $select->toHTML(); ?></td>
                 <td class="actions">
                     <?php if($participant !== null) : ?>

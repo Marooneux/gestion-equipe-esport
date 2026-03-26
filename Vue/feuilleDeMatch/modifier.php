@@ -1,9 +1,6 @@
 <?php
 
 use R301\Controleur\ParticipationControleur;
-use R301\Controleur\Participation\SupprimerParticipation;
-use R301\Modele\Participation\Poste;
-use R301\Modele\Participation\TitulaireOuRemplacant;
 
 $controleur = ParticipationControleur::getInstance();
 
@@ -17,10 +14,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
     switch($_POST['action']) {
         case "create":
             if (!$controleur->assignerUnParticipant(
-                $_POST['joueurId'],
-                $_POST['rencontreId'],
-                Poste::fromName($_POST['poste']),
-                TitulaireOuRemplacant::fromName($_POST['titulaireOuRemplacant'])
+                (int) $_POST['joueurId'],
+                (int) $_POST['rencontreId'],
+                $_POST['poste'],
+                $_POST['titulaireOuRemplacant']
             )) {
                 error_log("Erreur lors de l'ajout d'une participation");
             }
@@ -28,10 +25,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
         case "update":
             if (isset($_POST['participationId'])) {
                 if (!$controleur->modifierParticipation(
-                    $_POST['participationId'],
-                    Poste::fromName($_POST['poste']),
-                    TitulaireOuRemplacant::fromName($_POST['titulaireOuRemplacant']),
-                    $_POST['joueurId']
+                    (int) $_POST['participationId'],
+                    $_POST['poste'],
+                    $_POST['titulaireOuRemplacant'],
+                    (int) $_POST['joueurId']
                 )) {
                     error_log("Erreur lors de la modification de la participation");
                 }
@@ -39,12 +36,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
             break;
         case "delete":
             if (isset($_POST['participationId'])) {
-                if (!$controleur->supprimerLaPerformance($_POST['participationId'])) {
+                if (!$controleur->supprimerLaParticipation((int) $_POST['participationId'])) {
                     error_log("Erreur lors de la suppression de la participation");
                 }
             }
             break;
-        default:
     }
     header('Location: /feuilleDeMatch/feuilleDeMatch?id='.$_POST['rencontreId']);
 } else {
