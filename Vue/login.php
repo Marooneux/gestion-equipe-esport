@@ -2,7 +2,6 @@
 <?php
 
 use R301\Controleur\UtilisateurControleur;
-use R301\Modele\Utilisateur\UtilisateurDAO;
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["username"]) && isset($_POST["password"])) {
     $controleur = UtilisateurControleur::getInstance();

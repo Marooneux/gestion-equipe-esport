@@ -1,34 +1,34 @@
 <h1>Modifier un joueur</h1>
 <?php
-require_once __DIR__ . '/../../Controleur/ApiClient.php';
+
+use R301\Controleur\JoueurControleur;
 
 if (!isset($_GET['id'])) {
     header('Location: /joueur');
     exit;
 }
 
-$id = $_GET['id'];
+$id = (int) $_GET['id'];
+$controleur = JoueurControleur::getInstance();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $donnees = [
-        'id' => $id,
-        'nom' => $_POST['nom'],
-        'prenom' => $_POST['prenom'],
-        'numero_licence' => $_POST['numeroDeLicence'],
-        'date_naissance' => $_POST['dateDeNaissance'],
-        'taille' => (int) $_POST['tailleEnCm'],
-        'poids' => (int) $_POST['poidsEnKg'],
-        'statut' => $_POST['statut'],
-    ];
-    $reponse = api_put('/joueurs/' . $id, $donnees);
-    if ($reponse['status_code'] === 200) {
+    $succes = $controleur->modifierJoueur(
+        $id,
+        $_POST['nom'],
+        $_POST['prenom'],
+        $_POST['numeroDeLicence'],
+        $_POST['dateDeNaissance'],
+        (int) $_POST['tailleEnCm'],
+        (int) $_POST['poidsEnKg'],
+        $_POST['statut']
+    );
+    if ($succes) {
         header('Location: /joueur');
         exit;
     }
 }
 
-$reponse = api_get('/joueurs/' . $id);
-$joueur = $reponse['data'];
+$joueur = $controleur->getJoueurById($id);
 ?>
 
 <div class="container">

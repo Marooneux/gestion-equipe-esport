@@ -1,153 +1,96 @@
 <?php
 namespace R301\Controleur;
 
-use R301\Modele\Participation\FeuilleDeMatch;
-use R301\Modele\Participation\Participation;
-use R301\Modele\Participation\ParticipationDAO;
-use R301\Modele\Participation\Performance;
-use R301\Modele\Participation\Poste;
-use R301\Modele\Participation\TitulaireOuRemplacant;
+require_once __DIR__ . '/ApiClient.php';
 
 class ParticipationControleur {
     private static ?ParticipationControleur $instance = null;
-    private readonly ParticipationDAO $participations;
-    private readonly JoueurControleur $joueurs;
-    private readonly RencontreControleur $rencontres;
 
-    private function __construct(JoueurControleur $joueurs) {
-        $this->joueurs = $joueurs;
-        $this->participations = ParticipationDAO::getInstance();
-        $this->rencontres = RencontreControleur::getInstance();
-    }
+    private function __construct() {}
 
     public static function getInstance(): ParticipationControleur {
-        if (self::$instance == null) {
-            self::$instance = new ParticipationControleur(JoueurControleur::getInstance());
+        if (self::$instance === null) {
+            self::$instance = new ParticipationControleur();
         }
         return self::$instance;
     }
 
-    //Cette méthode permet de briser la dépendance cyclique entre les deux controleurs
-    public static function getInstanceFromJoueurControleur(JoueurControleur $joueurs): ParticipationControleur {
-        if (self::$instance == null) {
-            self::$instance = new ParticipationControleur($joueurs);
+    public function listerToutesLesParticipations(): array {
+        $reponse = api_get('/feuilledematche');
+        return $reponse['data'] ?? [];
+    }
+
+    public function getFeuilleDeMatch(int $rencontreId): array {
+        $toutes = $this->listerToutesLesParticipations();
+        return array_values(array_filter($toutes, fn($p) => $p['rencontre']['id'] === $rencontreId));
+    }
+
+    public function getParticipantAuPoste(array $feuille, string $poste, string $titulaireOuRemplacant): ?array {
+        foreach ($feuille as $participation) {
+            if ($participation['poste'] === $poste && $participation['titularité'] === $titulaireOuRemplacant) {
+                return $participation;
+            }
         }
-        return self::$instance;
+        return null;
     }
 
-    public function lejoueurEstDejaSurLaFeuilleDeMatch(int $rencontreId, int $joueurId) : bool {
-        return $this->participations->lejoueurEstDejaSurLaFeuilleDeMatch($rencontreId, $joueurId);
+    public function feuilleEstComplete(array $feuille): bool {
+        $postes = ['TOPLANE', 'JUNGLE', 'MIDLANE', 'ADCARRY', 'SUPPORT'];
+        foreach ($postes as $poste) {
+            if ($this->getParticipantAuPoste($feuille, $poste, 'TITULAIRE') === null) {
+                return false;
+            }
+        }
+        foreach ($feuille as $participation) {
+            if ($participation['joueur']['statut'] !== 'ACTIF') {
+                return false;
+            }
+        }
+        return true;
     }
 
-    public function listerToutesLesParticipations() : array {
-        return $this->participations->selectAllParticipations();
+    public function feuilleEstEvaluee(array $feuille): bool {
+        foreach ($feuille as $participation) {
+            if ($participation['performance'] === null) {
+                return false;
+            }
+        }
+        return true;
     }
 
-    public function getFeuilleDeMatch(int $rencontreId) : FeuilleDeMatch {
-        return new FeuilleDeMatch($this->participations->selectParticipationsByRencontreId($rencontreId));
-    }
-
-    public function assignerUnParticipant (
+    public function assignerUnParticipant(
         int $joueurId,
         int $rencontreId,
-        Poste $poste,
-        TitulaireOuRemplacant $titulaireOuRemplacant
-    ) : bool {
-        if ($this->participations->lePosteEstDejaOccupe($rencontreId, $poste, $titulaireOuRemplacant)
-            || $this->lejoueurEstDejaSurLaFeuilleDeMatch($rencontreId, $joueurId)
-        ) {
-            return false;
-        } else {
-            $joueur = $this->joueurs->getJoueurById($joueurId);
-            $rencontre = $this->rencontres->getRencontreById($rencontreId);
-
-            $participationACreer = new Participation(
-                0,
-                $joueur,
-                $rencontre,
-                $titulaireOuRemplacant,
-                null,
-                $poste
-            );
-
-            return $this->participations->insertParticipation($participationACreer);
-        }
+        string $poste,
+        string $titulaireOuRemplacant
+    ): bool {
+        $donnees = [
+            'joueur_id' => $joueurId,
+            'rencontre_id' => $rencontreId,
+            'poste' => $poste,
+            'titularité' => $titulaireOuRemplacant,
+        ];
+        $reponse = api_post('/feuilledematche', $donnees);
+        return isset($reponse['status_code']) && $reponse['status_code'] === 201;
     }
 
-    public function assignerUnParticipantByArray(Participation $participantAAjouter) {
-        $joueurId = $participantAAjouter->getParticipant()->getJoueurId();
-        $rencontreId = $participantAAjouter->getRencontre()->getRencontreId();
-        $poste = $participantAAjouter->getPoste();
-        $titulaireOuRemplacant = $participantAAjouter->getTitulaireOuRemplacant();
-        if ($this->participations->lePosteEstDejaOccupe($rencontreId, $poste, $titulaireOuRemplacant)
-            || $this->lejoueurEstDejaSurLaFeuilleDeMatch($rencontreId, $joueurId)
-        ) {
-            return false;
-        }
+    // Non disponible : pas d'endpoint PUT /feuilledematche/{id} dans le backend
+    public function modifierParticipation(int $participationId, string $poste, string $titulaireOuRemplacant, int $joueurId): bool {
+        return false;
     }
 
-    public function insertUneParticpation(Participation $participationAInserer) {
-
+    // Non disponible : pas d'endpoint DELETE /feuilledematche/{id} dans le backend
+    public function supprimerLaParticipation(int $participationId): bool {
+        return false;
     }
 
-    public function modifierParticipation(
-        int $participationId,
-        Poste $poste,
-        TitulaireOuRemplacant $titulaireOuRemplacant,
-        int $joueurId
-    ) : bool {
-        $participationAModifier = $this->participations->selectParticipationById($participationId);
-
-        if ($participationAModifier->getParticipant()->getJoueurId() != $joueurId) {
-            $participationAModifier->setParticipant($this->joueurs->getJoueurById($joueurId));
-        }
-
-        $participationAModifier->setPoste($poste);
-        $participationAModifier->setTitulaireOuRemplacant($titulaireOuRemplacant);
-
-        return $this->participations->updateParticipation($participationAModifier);
+    // Non disponible : pas d'endpoint pour les performances dans le backend
+    public function mettreAJourLaPerformance(int $participationId, string $performance): bool {
+        return false;
     }
 
-    public function supprimerLaParticipation(int $participationId) : bool {
-        return $this->participations->deleteParticipation($participationId);
-    }
-
-    public function mettreAJourLaPerformance(
-        int $participationId,
-        string $performance
-    ) : bool {
-        $participationAEvaluer = $this->participations->selectParticipationById($participationId);
-
-        if (!$participationAEvaluer->getRencontre()->estPassee()) {
-            return false;
-        }
-
-        $participationAEvaluer->setPerformance(Performance::fromName($performance));
-        return $this->participations->updatePerformance($participationAEvaluer);
-    }
-
-    public function supprimerLaPerformance(int $participationId) : bool {
-        $participationAEvaluer = $this->participations->selectParticipationById($participationId);
-
-        if (!$participationAEvaluer->getRencontre()->estPassee()) {
-            return false;
-        }
-
-        $participationAEvaluer->setPerformance(null);
-        return $this->participations->updatePerformance($participationAEvaluer);
-    }
-
-    public function buildParticipationFromArray($data) {
-        $joueur = $this->joueurs->getJoueurById($data['joueur_id']);
-        $rencontre = $this->rencontres->getRencontreById($data['rencontre_id']);
-
-        return new Participation(
-            $data['id'],
-            $joueur,
-            $rencontre,
-            TitulaireOuRemplacant::fromName($data['titularité']),
-            Performance::fromName($data['performance']),
-            Poste::fromName($data['poste'])
-        );
+    // Non disponible : pas d'endpoint pour les performances dans le backend
+    public function supprimerLaPerformance(int $participationId): bool {
+        return false;
     }
 }

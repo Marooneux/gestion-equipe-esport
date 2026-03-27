@@ -1,29 +1,13 @@
 <?php
-require_once __DIR__ . '/../Controleur/ApiClient.php';
 
-$reponse = api_get('/joueurs');
-$joueurs = $reponse['data'];
+use R301\Controleur\JoueurControleur;
 
-if (!empty($_GET['recherche'])) {
-    $joueursFiltres = [];
-    foreach ($joueurs as $joueur) {
-        if (str_contains(strtolower($joueur['nom']), strtolower($_GET['recherche']))
-            || str_contains(strtolower($joueur['prenom']), strtolower($_GET['recherche']))) {
-            $joueursFiltres[] = $joueur;
-        }
-    }
-    $joueurs = $joueursFiltres;
-}
+$controleur = JoueurControleur::getInstance();
+$joueurs = $controleur->rechercherLesJoueurs(
+    $_GET['recherche'] ?? '',
+    $_GET['statut'] ?? ''
+);
 
-if (!empty($_GET['statut'])) {
-    $joueursFiltres = [];
-    foreach ($joueurs as $joueur) {
-        if ($joueur['statut'] === $_GET['statut']) {
-            $joueursFiltres[] = $joueur;
-        }
-    }
-    $joueurs = $joueursFiltres;
-}
 ?>
 
 <h1>Joueurs</h1>

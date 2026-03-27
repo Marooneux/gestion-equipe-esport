@@ -6,40 +6,38 @@ use R301\Controleur\StatistiquesControleur;
 $controleur = StatistiquesControleur::getInstance();
 $statistiquesEquipe = $controleur->getStatistiquesEquipe();
 $statistiquesJoueurs = $controleur->getStatistiquesJoueurs();
-
-$controleur = JoueurControleur::getInstance();
-$joueurs = $controleur->listerTousLesJoueurs();
+$joueurs = JoueurControleur::getInstance()->listerTousLesJoueurs();
 
 ?>
 
 <div class="TripleGrid">
     <div>
-        <h1><?php echo $statistiquesEquipe->nbVictoires(); ?></h1>
+        <h1><?php echo $statistiquesEquipe['nbVictoires'] ?? '-'; ?></h1>
         <p> matchs gagnés</p>
     </div>
     <div>
-        <h1><?php echo $statistiquesEquipe->nbNuls(); ?></h1>
+        <h1><?php echo $statistiquesEquipe['nbNuls'] ?? '-'; ?></h1>
         <p> matchs nuls</p>
     </div>
     <div>
-        <h1><?php echo $statistiquesEquipe->nbDefaites(); ?></h1>
+        <h1><?php echo $statistiquesEquipe['nbDefaites'] ?? '-'; ?></h1>
         <p> matchs perdus</p>
     </div>
     <div>
-        <h1><?php echo $statistiquesEquipe->pourcentageDeVictoires(); ?>%</h1>
+        <h1><?php echo $statistiquesEquipe['pourcentageVictoires'] ?? '-'; ?>%</h1>
         <p> de matchs gagnés</p>
     </div>
     <div>
-        <h1><?php echo $statistiquesEquipe->pourcentageDeNuls(); ?>%</h1>
+        <h1><?php echo $statistiquesEquipe['pourcentageNuls'] ?? '-'; ?>%</h1>
         <p> de matchs nuls</p>
     </div>
     <div>
-        <h1><?php echo $statistiquesEquipe->pourcentageDeDefaites(); ?>%</h1>
+        <h1><?php echo $statistiquesEquipe['pourcentageDefaites'] ?? '-'; ?>%</h1>
         <p> de matchs perdus</p>
     </div>
 </div>
 <div class="overflow">
-    <table >
+    <table>
         <tr>
             <th style="width:15%;">Joueur</th>
             <th style="width:7%;">Statut</th>
@@ -50,16 +48,24 @@ $joueurs = $controleur->listerTousLesJoueurs();
             <th style="width:7%;">Moyenne évaluations</th>
             <th style="width:7%;">Pourcentage gagnés</th>
         </tr>
-        <?php foreach ($joueurs as $joueur): ?>
+        <?php foreach ($joueurs as $joueur):
+            $stats = null;
+            foreach ($statistiquesJoueurs as $s) {
+                if ($s['joueur_id'] === $joueur['id']) {
+                    $stats = $s;
+                    break;
+                }
+            }
+        ?>
         <tr>
-            <td><?php echo $joueur->toString(); ?></td>
-            <td><?php echo $joueur->getStatut()->name; ?></td>
-            <td><?php echo $statistiquesJoueurs->posteLePlusPerformant($joueur)?->name; ?></td>
-            <td><?php echo $statistiquesJoueurs->nbRencontresConsecutivesADate($joueur); ?></td>
-            <td><?php echo $statistiquesJoueurs->nbTitularisations($joueur); ?></td>
-            <td><?php echo $statistiquesJoueurs->nbRemplacant($joueur); ?></td>
-            <td><?php echo $statistiquesJoueurs->moyenneDesEvaluations($joueur); ?></td>
-            <td><?php echo $statistiquesJoueurs->pourcentageDeMatchsGagnes($joueur); ?></td>
+            <td><?php echo $joueur['numero_licence'] . ' : ' . $joueur['nom'] . ' ' . $joueur['prenom']; ?></td>
+            <td><?php echo $joueur['statut']; ?></td>
+            <td><?php echo $stats['posteLePlusPerformant'] ?? '-'; ?></td>
+            <td><?php echo $stats['nbConsecutifs'] ?? '-'; ?></td>
+            <td><?php echo $stats['nbTitularisations'] ?? '-'; ?></td>
+            <td><?php echo $stats['nbRemplacants'] ?? '-'; ?></td>
+            <td><?php echo $stats['moyenneEvaluations'] ?? '-'; ?></td>
+            <td><?php echo $stats['pourcentageGagnes'] ?? '-'; ?></td>
         </tr>
         <?php endforeach; ?>
     </table>

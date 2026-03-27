@@ -2,111 +2,100 @@
 
 namespace R301\Controleur;
 
-use DateTime;
-use R301\Modele\Rencontre\Rencontre;
-use R301\Modele\Rencontre\RencontreDAO;
-use R301\Modele\Rencontre\RencontreLieu;
-use R301\Modele\Rencontre\RencontreResultat;
+require_once __DIR__ . '/ApiClient.php';
 
 class RencontreControleur {
     private static ?RencontreControleur $instance = null;
-    private readonly RencontreDAO $rencontres;
 
-    private function __construct() {
-        $this->rencontres = RencontreDAO::getInstance();
-    }
+    private function __construct() {}
 
     public static function getInstance(): RencontreControleur {
-        if (self::$instance == null) {
+        if (self::$instance === null) {
             self::$instance = new RencontreControleur();
         }
         return self::$instance;
     }
 
+    public function listerToutesLesRencontres(): array {
+        $reponse = api_get('/rencontre');
+        return $reponse['data'] ?? [];
+    }
+
+    public function getRencontreById(int $id): ?array {
+        $reponse = api_get('/rencontre/' . $id);
+        return $reponse['data'] ?? null;
+    }
+
+    public function rencontreEstPassee(array $rencontre): bool {
+        $dateStr = is_array($rencontre['date_heure'])
+            ? $rencontre['date_heure']['date']
+            : $rencontre['date_heure'];
+        return strtotime($dateStr) < time();
+    }
+
     public function ajouterRencontre(
-        DateTime $dateHeure,
+        string $dateHeure,
         string $equipeAdverse,
         string $adresse,
-        RencontreLieu $lieu
-    ) : bool {
-
-        if ($dateHeure < date("Y-m-d H:i:s")) {
+        string $lieu
+    ): bool {
+        if (strtotime($dateHeure) < time()) {
             return false;
-        } else {
-            $rencontreAAjouter = new Rencontre(
-                $dateHeure,
-                $equipeAdverse,
-                $adresse,
-                $lieu
-            );
-
-            return $this->rencontres->insertRencontre($rencontreAAjouter);
         }
-    }
-
-    public function ajouterRencontreFromArray($rencontreAAjouter) {
-        return $this->rencontres->insertRencontre($rencontreAAjouter);
-    }
-
-    public function enregistrerResultat(
-        int $rencontreId,
-        string $resultat
-    ) : bool {
-        $rencontreAModifier = $this->rencontres->selectRencontreById($rencontreId);
-
-        if (!$rencontreAModifier->estPassee()) {
-            return false;
-        } else {
-            $rencontreAModifier->setResultat(RencontreResultat::fromName($resultat));
-
-            return $this->rencontres->enregistrerResultat($rencontreAModifier);
-        }
-    }
-
-    public function getRencontreById(int $rencontreId) : Rencontre {
-        return $this->rencontres->selectRencontreById($rencontreId);
-    }
-
-    public function listerToutesLesRencontres() : array {
-        return $this->rencontres->selectAllRencontres();
+        $donnees = [
+            'id' => 0,
+            'date_heure' => [
+                'date' => date('Y-m-d H:i:s.000000', strtotime($dateHeure)),
+                'timezone_type' => 3,
+                'timezone' => 'UTC',
+            ],
+            'equipe_adverse' => $equipeAdverse,
+            'adresse' => $adresse,
+            'lieu_recontre' => $lieu,
+            'resultat' => null,
+        ];
+        $reponse = api_post('/rencontre', $donnees);
+        return isset($reponse['status_code']) && $reponse['status_code'] === 201;
     }
 
     public function modifierRencontre(
-        int $rencontreId,
-        DateTime $dateHeure,
+        int $id,
+        string $dateHeure,
         string $equipeAdverse,
         string $adresse,
-        RencontreLieu $lieu
-    ) : bool {
-
-        $rencontreAModifier = $this->rencontres->selectRencontreById($rencontreId);
-
-        if (
-            $rencontreAModifier->estPassee()
-            || $dateHeure < new DateTime()
-        ) {
+        string $lieu
+    ): bool {
+        $rencontre = $this->getRencontreById($id);
+        if ($rencontre === null || $this->rencontreEstPassee($rencontre) || strtotime($dateHeure) < time()) {
             return false;
-        } else {
-            $rencontreAModifier->setDateEtHeure($dateHeure);
-            $rencontreAModifier->setEquipeAdverse($equipeAdverse);
-            $rencontreAModifier->setAdresse($adresse);
-            $rencontreAModifier->setLieu($lieu);
-
-            return $this->rencontres->updateRencontre($rencontreAModifier);
         }
+        $donnees = [
+            'id' => $id,
+            'date_heure' => [
+                'date' => date('Y-m-d H:i:s.000000', strtotime($dateHeure)),
+                'timezone_type' => 3,
+                'timezone' => 'UTC',
+            ],
+            'equipe_adverse' => $equipeAdverse,
+            'adresse' => $adresse,
+            'lieu_recontre' => $lieu,
+            'resultat' => $rencontre['resultat'],
+        ];
+        $reponse = api_put('/rencontre/' . $id, $donnees);
+        return isset($reponse['status_code']) && $reponse['status_code'] === 200;
     }
 
-    public function modifierRencontreByArray($rencontreAModifier) {
-        return $this->rencontres->updateRencontre($rencontreAModifier);
+    public function supprimerRencontre(int $id): bool {
+        $rencontre = $this->getRencontreById($id);
+        if ($rencontre === null || $rencontre['resultat'] !== null) {
+            return false;
+        }
+        $reponse = api_delete('/rencontre/' . $id);
+        return isset($reponse['status_code']) && $reponse['status_code'] === 200;
     }
 
-    public function supprimerRencontre(int $rencontreId) : bool {
-        $rencontreASupprimer = $this->rencontres->selectRencontreById($rencontreId);
-
-        if($rencontreASupprimer->getResultat() != null) {
-            return false;
-        } else {
-            return $this->rencontres->supprimerRencontre($rencontreId);
-        }
+    // Non disponible : pas d'endpoint dans le backend
+    public function enregistrerResultat(int $id, string $resultat): bool {
+        return false;
     }
 }

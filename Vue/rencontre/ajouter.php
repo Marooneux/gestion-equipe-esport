@@ -3,7 +3,6 @@
 <?php
 
 use R301\Controleur\RencontreControleur;
-use R301\Modele\Rencontre\RencontreLieu;
 use R301\Vue\Component\Formulaire;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST'
@@ -14,16 +13,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
 ) {
     $controleur = RencontreControleur::getInstance();
 
-    if (
-        $controleur->ajouterRencontre(
-            new DateTime($_POST['dateHeure']),
-            $_POST['equipeAdverse'],
-            $_POST['adresse'],
-            RencontreLieu::fromName($_POST['lieu'])
-        )
-    ) {
+    if ($controleur->ajouterRencontre(
+        $_POST['dateHeure'],
+        $_POST['equipeAdverse'],
+        $_POST['adresse'],
+        $_POST['lieu']
+    )) {
         header('Location: /rencontre');
-    }else{
+    } else {
         error_log("Erreur lors de la création de la rencontre");
     }
 } else {
@@ -31,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
     $formulaire->setDateTime("Date", "dateHeure", date("Y-m-d H:i"));
     $formulaire->setText("Equipe adverse", "equipeAdverse");
     $formulaire->setText("Adresse", "adresse");
-    $formulaire->setSelect("Lieu", array_map(function(RencontreLieu $lieu) { return $lieu->name; }, RencontreLieu::cases()), "lieu");
+    $formulaire->setSelect("Lieu", ['DOMICILE', 'EXTERIEUR'], "lieu");
     $formulaire->addButton("Submit", "create", "Valider", "Modifier");
     echo $formulaire;
 }

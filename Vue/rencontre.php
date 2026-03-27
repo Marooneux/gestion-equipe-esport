@@ -5,6 +5,7 @@ use R301\Controleur\RencontreControleur;
 use R301\Vue\Component\SelectResultat;
 
 $controleur = RencontreControleur::getInstance();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST'
         && isset($_POST['action'])
         && isset($_POST['rencontreId'])
@@ -38,7 +39,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
 
 $rencontres = $controleur->listerToutesLesRencontres();
 
-
 ?>
 <h1>Rencontres</h1>
 <div class="overflow container">
@@ -52,32 +52,30 @@ $rencontres = $controleur->listerToutesLesRencontres();
             <th style="width:20%; min-width: 200px;">Actions</th>
         </tr>
         <?php foreach ($rencontres as $rencontre):
-
-            $selectResultat = new SelectResultat(
-                    null,
-                    $rencontre->getResultat()?->name
-            );
+            $dateStr = is_array($rencontre['date_heure']) ? $rencontre['date_heure']['date'] : $rencontre['date_heure'];
+            $estPassee = strtotime($dateStr) < time();
+            $selectResultat = new SelectResultat(null, $rencontre['resultat']);
         ?>
         <form action="rencontre" method="post">
             <tr>
-                <input type="hidden" name="rencontreId" value="<?php echo $rencontre->getRencontreId(); ?>" />
-                <td><?php echo $rencontre->getDateEtHeure()->format('d/m/Y H:i') ?></td>
-                <td><?php echo $rencontre->getEquipeAdverse() ?></td>
-                <td><?php echo $rencontre->getAdresse() ?></td>
-                <td><?php echo $rencontre->getLieu()->name ?></td>
-                <?php if ($rencontre->estPassee() && $rencontre->getResultat() ===null): ?>
+                <input type="hidden" name="rencontreId" value="<?php echo $rencontre['id']; ?>" />
+                <td><?php echo date('d/m/Y H:i', strtotime($dateStr)); ?></td>
+                <td><?php echo $rencontre['equipe_adverse']; ?></td>
+                <td><?php echo $rencontre['adresse']; ?></td>
+                <td><?php echo $rencontre['lieu_recontre']; ?></td>
+                <?php if ($estPassee && $rencontre['resultat'] === null): ?>
                     <td><?php $selectResultat->toHTML(); ?></td>
                 <?php else: ?>
-                    <td><?php echo $rencontre->getResultat()?->name ?></td>
+                    <td><?php echo $rencontre['resultat']; ?></td>
                 <?php endif; ?>
                 <td class="actions">
-                    <?php if (!$rencontre->estPassee()): ?>
+                    <?php if (!$estPassee): ?>
                     <button name="action" value="ouvrirFeuilleDeMatch" class="info">Feuilles de match</button>
                     <button name="action" value="modifier" class="update">Modifier</button>
                     <button name="action" value="supprimer" class="delete">Supprimer</button>
                     <?php else: ?>
                     <button name="action" value="ouvrirEvaluations" class="info">Évaluations</button>
-                    <?php if ($rencontre->estPassee() && $rencontre->getResultat() ===null): ?>
+                    <?php if ($estPassee && $rencontre['resultat'] === null): ?>
                     <button class="create" name="action" value="enregistrerResultat">Enregistrer résultat</button>
                     <?php endif; ?>
                     <?php endif; ?>

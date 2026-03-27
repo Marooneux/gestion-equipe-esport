@@ -2,11 +2,33 @@
 
 define('API_URL', 'http://localhost:8080');
 
+
+// Requete pour obtenir un token de l'api d'authentification
+function auth_get_token() {
+    $auth_endpoint = "http://localhost/r401_team_management_auth/api/get_token.php";
+    $donnees = [
+        'login' => 'coach',
+        'password' => 'sport'
+    ];
+    $contexte = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => 'Content-Type: application/json',
+            'content' => json_encode($donnees)
+        ]
+    ]);
+    $reponse = file_get_contents($auth_endpoint, false, $contexte);
+    return json_decode($reponse, true);
+}
+
+
+// Requete GET vers backend
 function api_get($endpoint) {
     $reponse = file_get_contents(API_URL . $endpoint);
     return json_decode($reponse, true);
 }
 
+// Requete POST vers backend
 function api_post($endpoint, $donnees) {
     $contexte = stream_context_create([
         'http' => [
@@ -19,6 +41,7 @@ function api_post($endpoint, $donnees) {
     return json_decode($reponse, true);
 }
 
+// Requete PUT vers backend
 function api_put($endpoint, $donnees) {
     $contexte = stream_context_create([
         'http' => [
@@ -31,6 +54,7 @@ function api_put($endpoint, $donnees) {
     return json_decode($reponse, true);
 }
 
+// Requete DELETE vers backend
 function api_delete($endpoint) {
     $contexte = stream_context_create([
         'http' => ['method' => 'DELETE']

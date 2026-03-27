@@ -2,127 +2,105 @@
 
 namespace R301\Controleur;
 
-use DateTime;
-use R301\Modele\Joueur\Joueur;
-use R301\Modele\Joueur\JoueurDAO;
-use R301\Modele\Joueur\JoueurStatut;
+require_once __DIR__ . '/ApiClient.php';
 
 class JoueurControleur {
     private static ?JoueurControleur $instance = null;
-    private readonly JoueurDAO $joueurs;
-    private readonly ParticipationControleur $participationControleur;
 
-    private function __construct() {
-        $this->joueurs = JoueurDAO::getInstance();
-        $this->participationControleur = ParticipationControleur::getInstanceFromJoueurControleur($this);
-    }
+    private function __construct() {}
 
     public static function getInstance(): JoueurControleur {
-        if (self::$instance == null) {
+        if (self::$instance === null) {
             self::$instance = new JoueurControleur();
         }
         return self::$instance;
+    }
+
+    public function listerTousLesJoueurs(): array {
+        $reponse = api_get('/joueurs');
+        return $reponse['data'] ?? [];
+    }
+
+    public function getJoueurById(int $id): ?array {
+        $reponse = api_get('/joueurs/' . $id);
+        return $reponse['data'] ?? null;
     }
 
     public function ajouterJoueur(
         string $nom,
         string $prenom,
         string $numeroDeLicence,
-        DateTime $dateDeNaissance,
+        string $dateDeNaissance,
         int $tailleEnCm,
         int $poidsEnKg,
         string $statut
-    ) : bool {
-        $joueurACreer = new Joueur(
-            0,
-            $nom,
-            $prenom,
-            $numeroDeLicence,
-            $dateDeNaissance,
-            $tailleEnCm,
-            $poidsEnKg,
-            JoueurStatut::fromName($statut)
-        );
-
-        return $this->joueurs->insertJoueur($joueurACreer);
-    }
-
-    public function ajouterJoueurFromArray(Joueur $joueurACreer): bool {
-        return $this->joueurs->insertJoueur($joueurACreer);
-    }
-
-    public function getJoueurById(int $joueurId) {
-        return $this->joueurs->selectJoueurById($joueurId);
-    }
-
-    public function listerLesJoueursSelectionnablesPourUnMatch(int $rencontreId) : array {
-        $joueursActifs = $this->joueurs->selectJoueursByStatut(JoueurStatut::ACTIF);
-        $joueursSelectionnables = [];
-
-        foreach ($joueursActifs as $joueur) {
-            if (!$this->participationControleur->lejoueurEstDejaSurLaFeuilleDeMatch($rencontreId, $joueur->getJoueurId())) {
-                $joueursSelectionnables[] = $joueur;
-            }
-        }
-
-        return $joueursSelectionnables;
-    }
-
-    public function listerTousLesJoueurs() : array {
-        return $this->joueurs->selectAllJoueurs();
+    ): bool {
+        $donnees = [
+            'id' => 0,
+            'nom' => $nom,
+            'prenom' => $prenom,
+            'numero_licence' => $numeroDeLicence,
+            'date_naissance' => $dateDeNaissance,
+            'taille' => $tailleEnCm,
+            'poids' => $poidsEnKg,
+            'statut' => $statut,
+        ];
+        $reponse = api_post('/joueurs', $donnees);
+        return isset($reponse['status_code']) && $reponse['status_code'] === 201;
     }
 
     public function modifierJoueur(
-        int $joueurId,
+        int $id,
         string $nom,
         string $prenom,
         string $numeroDeLicence,
-        DateTime $dateDeNaissance,
+        string $dateDeNaissance,
         int $tailleEnCm,
         int $poidsEnKg,
         string $statut
-    ) : bool {
-        $joueurAModifier = $this->joueurs->selectJoueurById($joueurId);
-
-        $joueurAModifier->setNom($nom);
-        $joueurAModifier->setPrenom($prenom);
-        $joueurAModifier->setNumeroDeLicence($numeroDeLicence);
-        $joueurAModifier->setDateDeNaissance($dateDeNaissance);
-        $joueurAModifier->setTailleEnCm($tailleEnCm);
-        $joueurAModifier->setPoidsEnKg($poidsEnKg);
-        $joueurAModifier->setStatut(JoueurStatut::fromName($statut));
-
-        return $this->joueurs->updateJoueur($joueurAModifier);
+    ): bool {
+        $donnees = [
+            'id' => $id,
+            'nom' => $nom,
+            'prenom' => $prenom,
+            'numero_licence' => $numeroDeLicence,
+            'date_naissance' => $dateDeNaissance,
+            'taille' => $tailleEnCm,
+            'poids' => $poidsEnKg,
+            'statut' => $statut,
+        ];
+        $reponse = api_put('/joueurs/' . $id, $donnees);
+        return isset($reponse['status_code']) && $reponse['status_code'] === 200;
     }
 
-    public function modifierJoueurByArray(Joueur $joueurAModifier) : bool {
-        return $this->joueurs->updateJoueur($joueurAModifier);
+    public function supprimerJoueur(int $id): bool {
+        $reponse = api_delete('/joueurs/' . $id);
+        return isset($reponse['status_code']) && $reponse['status_code'] === 200;
     }
 
-    public function rechercherLesJoueurs(string $recherche, string $statut) : array {
-        $tousLesjoueurs = $this->joueurs->selectAllJoueurs();
-        $joueursTrouves = [];
-
-        foreach ($tousLesjoueurs as $joueur) {
-            $conserverDansLaListe = true;
-
-            if ($recherche !== "") {
-                $conserverDansLaListe = $joueur->nomOuPrenomContient($recherche);
+    public function rechercherLesJoueurs(string $recherche, string $statut): array {
+        $joueurs = $this->listerTousLesJoueurs();
+        return array_values(array_filter($joueurs, function ($joueur) use ($recherche, $statut) {
+            $ok = true;
+            if ($recherche !== '') {
+                $ok = str_contains(strtolower($joueur['nom']), strtolower($recherche))
+                   || str_contains(strtolower($joueur['prenom']), strtolower($recherche));
             }
-
-            if ($conserverDansLaListe && $statut !== "") {
-                $conserverDansLaListe = $joueur->getStatut() == JoueurStatut::fromName($statut);
+            if ($ok && $statut !== '') {
+                $ok = $joueur['statut'] === $statut;
             }
-
-            if ($conserverDansLaListe) {
-                $joueursTrouves[] = $joueur;
-            }
-        }
-
-        return $joueursTrouves;
+            return $ok;
+        }));
     }
 
-    public function supprimerJoueur(int $joueurId) : bool {
-        return $this->joueurs->supprimerJoueur($joueurId);
+    public function listerLesJoueursSelectionnablesPourUnMatch(int $rencontreId): array {
+        $joueurs = $this->listerTousLesJoueurs();
+        $feuille = ParticipationControleur::getInstance()->getFeuilleDeMatch($rencontreId);
+        $idsDejaSurFeuille = array_map(fn($p) => $p['joueur']['id'], $feuille);
+
+        return array_values(array_filter($joueurs, function ($joueur) use ($idsDejaSurFeuille) {
+            return $joueur['statut'] === 'ACTIF'
+                && !in_array($joueur['id'], $idsDejaSurFeuille);
+        }));
     }
 }
