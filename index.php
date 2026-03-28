@@ -9,6 +9,7 @@ use R301\Controleur\RencontreControleur;
 use R301\Modele\Rencontre\Rencontre;
 use R301\Controleur\ParticipationControleur;
 use R301\Modele\Participation\Participation;
+use R301\Controleur\StatistiquesControleur;
 
 $loader = new Psr4AutoloaderClass;
 // register the autoloader
@@ -21,6 +22,7 @@ $resource = strtok($_SERVER["REQUEST_URI"], '?');
 $joueursController = JoueurControleur::getInstance();
 $rencontresController = RencontreControleur::getInstance();
 $participationsController = ParticipationControleur::getInstance();
+$statistiquesController = StatistiquesControleur::getInstance();
 
 
 if(rtrim($resource, "/") == "/joueurs") {
@@ -251,6 +253,59 @@ if(preg_match('#^/feuilledematche/([0-9]+)$#', $resource, $matches) == 1) {
                 deliver_response(404, "Performance d'id $id n'existe pas");
                 } else {
                 deliver_response(200, "Performance d'id $id supprimée avec succèes");
+            }
+            break;
+    }
+}
+
+if(rtrim($resource, "/") == '/statistiques') {
+    switch($http_method) {
+        case 'GET':
+            try {
+                $data = $statistiquesController->getStatistiquesEquipe();
+                if($data) {
+                    deliver_response(200, "Stats récuperée avec succèes", $data);
+                } else {
+                    deliver_response(200, "La base de données ne contient aucun rencontre.");
+                }
+            } catch(PDOException $e) {
+                deliver_response(500, "Erreur lors de la récuperation des joueurs.");
+            }
+            break;
+    }
+}
+
+if(rtrim($resource, "/") == '/statistiques/joueurs') {
+    switch($http_method) {
+        case 'GET':
+            try {
+                $data = $statistiquesController->getStatistiquesTousLesJoueurs();
+                if($data == true) {
+                    deliver_response(200, "Stats des joueurs récuperées avec succèes", $data);
+                } else {
+                    deliver_response(200, "Aucun joueur trouvé.");
+                }
+            } catch(PDOException $e) {
+                deliver_response(500, "Erreur lors de la récupération des stats joueurs.");
+            }
+            break;
+    }
+}
+
+if(preg_match('#^/statistiques/joueurs/([0-9]+)$#', $resource, $matches) == 1) {
+    $id = $matches[1];
+
+    switch($http_method) {
+        case 'GET':
+            try {
+                $data = $statistiquesController->getStatistiquesDUnJoueur((int)$id);
+                if($data == false) {
+                    deliver_response(404, "Joueur d'id $id n'existe pas");
+                } else {
+                    deliver_response(200, "Stats du joueur récupérées avec succès", $data);
+                }
+            } catch(PDOException $e) {
+                deliver_response(500, "Erreur lors de la récupération des stats du joueur.");
             }
             break;
     }
