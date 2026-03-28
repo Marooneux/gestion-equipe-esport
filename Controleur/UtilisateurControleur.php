@@ -16,12 +16,11 @@ class UtilisateurControleur {
         return self::$instance;
     }
 
-    public function seConnecter(string $username, string $password): bool {
-        $reponse = api_post('/auth', ['login' => $username, 'password' => $password]);
-        if (isset($reponse['status_code']) && $reponse['status_code'] === 200) {
-            session_set_cookie_params(1800);
-            ini_set('session.gc_maxlifetime', 1800);
+    public function seConnecter($username, $password) {
+        $reponse = auth_get_token($username, $password);
+        if ($reponse['status_code'] === 200) {
             $_SESSION['username'] = $username;
+            $_SESSION['token'] = $reponse['data'];
             return true;
         }
         return false;

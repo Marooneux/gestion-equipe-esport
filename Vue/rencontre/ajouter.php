@@ -29,6 +29,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
     $formulaire->setText("Equipe adverse", "equipeAdverse");
     $formulaire->setText("Adresse", "adresse");
     $formulaire->setSelect("Lieu", ['DOMICILE', 'EXTERIEUR'], "lieu");
-    $formulaire->addButton("Submit", "create", "Valider", "Modifier");
+    $formulaire->addButton("Submit", "create", "Valider", "Ajouter");
     echo $formulaire;
 }

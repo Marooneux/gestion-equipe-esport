@@ -4,20 +4,15 @@ define('API_URL', 'http://localhost:8080');
 
 
 // Requete pour obtenir un token de l'api d'authentification
-function auth_get_token() {
-    $auth_endpoint = "http://localhost/r401_team_management_auth/api/get_token.php";
-    $donnees = [
-        'login' => 'coach',
-        'password' => 'sport'
-    ];
+function auth_get_token($login, $password) {
     $contexte = stream_context_create([
         'http' => [
             'method' => 'POST',
             'header' => 'Content-Type: application/json',
-            'content' => json_encode($donnees)
+            'content' => json_encode(['login' => $login, 'password' => $password])
         ]
     ]);
-    $reponse = file_get_contents($auth_endpoint, false, $contexte);
+    $reponse = file_get_contents("https://r401auth.alwaysdata.net/auth/login", false, $contexte);
     return json_decode($reponse, true);
 }
 
