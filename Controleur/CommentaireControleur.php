@@ -2,17 +2,12 @@
 
 namespace R301\Controleur;
 
-use DateTime;
-use R301\Modele\Joueur\Commentaire\Commentaire;
-use R301\Modele\Joueur\Commentaire\CommentaireDAO;
+require_once __DIR__ . '/ApiClient.php';
 
 class CommentaireControleur {
     private static ?CommentaireControleur $instance = null;
-    private readonly CommentaireDAO $commentaires;
 
-    private function __construct() {
-        $this->commentaires = CommentaireDAO::getInstance();
-    }
+    private function __construct() {}
 
     public static function getInstance(): CommentaireControleur {
         if (self::$instance === null) {
@@ -22,20 +17,16 @@ class CommentaireControleur {
     }
 
     public function ajouterCommentaire(string $contenu, string $joueurId): bool {
-        $commentaireACreer = new Commentaire(0, $contenu, new DateTime());
-        return $this->commentaires->insertCommentaire($commentaireACreer, $joueurId);
+        $reponse = api_post("/joueurs/$joueurId/commentaires", ['contenu' => $contenu]);
+        return isset($reponse['status_code']) && $reponse['status_code'] === 201;
     }
 
     public function listerLesCommentairesDuJoueur(int $joueurId): array {
-        $commentaires = $this->commentaires->selectCommentaireByJoueurId($joueurId);
-        return array_map(fn($c) => [
-            'id'      => $c->getCommentaireId(),
-            'contenu' => $c->getContenu(),
-            'date'    => $c->getDate()->format('Y-m-d H:i:s'),
-        ], $commentaires);
+        return api_get("/joueurs/$joueurId/commentaires")['data'] ?? [];
     }
 
     public function supprimerCommentaire(string $commentaireId): bool {
-        return $this->commentaires->deleteCommentaire($commentaireId);
+        $reponse = api_delete("/commentaires/$commentaireId");
+        return isset($reponse['status_code']) && $reponse['status_code'] === 200;
     }
 }
