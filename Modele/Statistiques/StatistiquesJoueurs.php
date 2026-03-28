@@ -84,7 +84,7 @@ class StatistiquesJoueurs {
         }));
     }
 
-    private function nbMatchsEvalues(Joueur $joueur): int {
+    public function nbMatchsEvalues(Joueur $joueur): int {
         return count(
             array_filter($this->participationsDunJoueur($joueur), function($participation) {
                 return $participation->getPerformance() !== null;
@@ -92,7 +92,7 @@ class StatistiquesJoueurs {
         );
     }
 
-    private function nbMatchsJoues(Joueur $joueur): int {
+    public function nbMatchsJoues(Joueur $joueur): int {
         return count(
             array_filter($this->participationsDunJoueur($joueur), function($participation) {
                 return $participation->getRencontre()->getResultat() !== null;
@@ -100,7 +100,7 @@ class StatistiquesJoueurs {
         );
     }
 
-    private function nbMatchsGagnes(Joueur $joueur): int {
+    public function nbMatchsGagnes(Joueur $joueur): int {
         return count(
             array_filter($this->participationsDunJoueur($joueur), function($participation) {
                 return $participation->getRencontre()->gagne();
@@ -128,9 +128,9 @@ class StatistiquesJoueurs {
         }
     }
 
-    public function pourcentageDeMatchsGagnes(Joueur $joueur): ?int {
+    public function pourcentageDeMatchsGagnes(Joueur $joueur): ?float {
         if ($this->nbMatchsJoues($joueur) > 0) {
-            return $this->nbMatchsGagnes($joueur) / $this->nbMatchsJoues($joueur) * 100;
+            return round($this->nbMatchsGagnes($joueur) / $this->nbMatchsJoues($joueur) * 100, 3);
         } else {
             return null;
         }
