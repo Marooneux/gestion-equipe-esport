@@ -130,7 +130,7 @@ class Rencontre implements \JsonSerializable {
             $data['equipe_adverse'],
             $data['adresse'],
             RencontreLieu::fromName($data['lieu_recontre']),
-            RencontreResultat::fromName($data['resultat']),
+            $data['resultat'] ? RencontreResultat::fromName($data['resultat']) : null,
             $data['id']
         );
     }

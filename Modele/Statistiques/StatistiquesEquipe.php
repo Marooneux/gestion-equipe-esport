@@ -30,15 +30,18 @@ class StatistiquesEquipe implements \JsonSerializable {
     }
 
     public function pourcentageDeVictoires(): int {
-        return $this->nbVictoires() / $this->nbMatchsJoues() * 100;
+        if ($this->nbMatchsJoues() === 0) return 0;
+        return (int) ($this->nbVictoires() / $this->nbMatchsJoues() * 100);
     }
 
     public function pourcentageDeNuls(): int {
-        return $this->nbNuls() / $this->nbMatchsJoues() * 100;
+        if ($this->nbMatchsJoues() === 0) return 0;
+        return (int) ($this->nbNuls() / $this->nbMatchsJoues() * 100);
     }
 
     public function pourcentageDeDefaites(): int {
-        return $this->nbDefaites() / $this->nbMatchsJoues() * 100;
+        if ($this->nbMatchsJoues() === 0) return 0;
+        return (int) ($this->nbDefaites() / $this->nbMatchsJoues() * 100);
     }
 
     public function jsonSerialize(): array {

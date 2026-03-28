@@ -133,8 +133,6 @@ if(rtrim($resource, "/") == '/rencontre') {
     }
 }
 
-echo $resource;
-
 if(preg_match('#^/rencontre/([0-9]+)$#', $resource, $matches) == 1) {
     #Get the id
     $id = $matches[1];
@@ -152,9 +150,8 @@ if(preg_match('#^/rencontre/([0-9]+)$#', $resource, $matches) == 1) {
             $body = file_get_contents("php://input");
             $data = json_decode($body, true);
             try {
-                $renconctreAModifier = Rencontre::buildRencontreFromArray($data);
-                $rencontreAModifier->setRencontreId($id);
-                $res = $rencontreController->modifierRencontreByArray($rencontreAModifier);
+                $rencontreAModifier = Rencontre::buildRencontreFromArray($data);
+                $res = $rencontresController->modifierRencontreByArray($rencontreAModifier);
 
                 if($res) {
                     deliver_response(200, "Données du rencontre modifié avec succées.");
@@ -168,12 +165,11 @@ if(preg_match('#^/rencontre/([0-9]+)$#', $resource, $matches) == 1) {
             }
             break;
         case 'DELETE':
-            $data = $rencontreController->supprimerRencontre($id);
-            print_r($data);
+            $data = $rencontresController->supprimerRencontre($id);
 
             if($data == false) {
                 deliver_response(404, "Rencontre d'id $id n'existe pas");
-                } else {
+            } else {
                 deliver_response(200, "Rencontre d'id $id supprimée avec succèes");
             }
             break;

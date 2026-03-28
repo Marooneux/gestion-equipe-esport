@@ -107,7 +107,7 @@ class ParticipationControleur {
     }
 
     public function modifierParticipationByArray(Participation $participationAModifier) {
-        $joueurId = $participationAModifier->getParticipationId();
+        $joueurId = $participationAModifier->getParticipant()->getJoueurId();
         $poste = $participationAModifier->getPoste();
         $titulaireOuRemplacant = $participationAModifier->getTitulaireOuRemplacant();
 
@@ -115,13 +115,7 @@ class ParticipationControleur {
             $participationAModifier->setParticipant($this->joueurs->getJoueurById($joueurId));
         }
 
-        $performance = $participationAModifier->getPerformance();
-        
-        print_r(json_encode($participationAModifier));
-
-        if ($performance != null) {
-            $this->mettreAJourLaPerformance($participationAModifier);
-        }
+        $this->participations->updatePerformance($participationAModifier);
 
         $participationAModifier->setPoste($poste);
         $participationAModifier->setTitulaireOuRemplacant($titulaireOuRemplacant);
@@ -157,7 +151,7 @@ class ParticipationControleur {
         $rencontre = $this->rencontres->getRencontreById($data['rencontre_id']);
 
         return new Participation(
-            $data['id'],
+            $data['id'] ?? 0,
             $joueur,
             $rencontre,
             TitulaireOuRemplacant::fromName($data['titularité']),

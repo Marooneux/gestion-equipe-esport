@@ -113,7 +113,7 @@ class ParticipationDAO {
                       note_performance = :note_performance
                   WHERE participation_id = :participation_id';
         $statement=$this->database->pdo()->prepare($query);
-        $statement->bindValue(':note_performance', $participationAModifier->getPerformance()->value);
+        $statement->bindValue(':note_performance', $participationAModifier->getPerformance()?->value);
         $statement->bindValue(':participation_id', $participationAModifier->getParticipationId());
         return $statement->execute();
     }
