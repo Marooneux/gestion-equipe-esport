@@ -3,9 +3,9 @@
 use R301\Controleur\CommentaireControleur;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['commentaireId'])) {
+    if (isset($_POST['commentaireId'], $_POST['joueurId'])) {
         $controleurCommentaire = CommentaireControleur::getInstance();
-        if (!$controleurCommentaire->supprimerCommentaire($_POST['commentaireId'])) {
+        if (!$controleurCommentaire->supprimerCommentaire($_POST['joueurId'], $_POST['commentaireId'])) {
             error_log("Erreur lors de la suppression du commentaire");
         }
     }

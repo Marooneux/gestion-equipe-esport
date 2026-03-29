@@ -71,7 +71,7 @@ class ParticipationControleur {
             'titularité'   => $titulaireOuRemplacant,
         ];
         $reponse = api_post('/feuilledematche', $donnees);
-        return isset($reponse['status_code']) && $reponse['status_code'] === 201;
+        return isset($reponse['success']) && $reponse['success'] === true;
     }
 
     private function getParticipationById(int $participationId): ?array {
@@ -92,12 +92,12 @@ class ParticipationControleur {
             'titularité'   => $titulaireOuRemplacant,
         ];
         $reponse = api_put("/feuilledematche/$participationId", $donnees);
-        return isset($reponse['status_code']) && $reponse['status_code'] === 200;
+        return isset($reponse['success']) && $reponse['success'] === true;
     }
 
     public function supprimerLaParticipation(int $participationId): bool {
         $reponse = api_delete("/feuilledematche/$participationId");
-        return isset($reponse['status_code']) && $reponse['status_code'] === 200;
+        return isset($reponse['success']) && $reponse['success'] === true;
     }
 
     public function mettreAJourLaPerformance(int $participationId, string $performance): bool {
@@ -112,7 +112,7 @@ class ParticipationControleur {
             'performance'  => $performance,
         ];
         $reponse = api_put("/feuilledematche/$participationId", $donnees);
-        return isset($reponse['status_code']) && $reponse['status_code'] === 200;
+        return isset($reponse['success']) && $reponse['success'] === true;
     }
 
     public function supprimerLaPerformance(int $participationId): bool {
@@ -126,6 +126,6 @@ class ParticipationControleur {
             'titularité'   => $p['titularité'],
         ];
         $reponse = api_put("/feuilledematche/$participationId", $donnees);
-        return isset($reponse['status_code']) && $reponse['status_code'] === 200;
+        return isset($reponse['success']) && $reponse['success'] === true;
     }
 }

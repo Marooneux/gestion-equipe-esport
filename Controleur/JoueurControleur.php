@@ -46,7 +46,7 @@ class JoueurControleur {
             'statut' => $statut,
         ];
         $reponse = api_post('/joueurs', $donnees);
-        return isset($reponse['status_code']) && $reponse['status_code'] === 201;
+        return isset($reponse['success']) && $reponse['success'] === true;
     }
 
     public function modifierJoueur(
@@ -70,12 +70,12 @@ class JoueurControleur {
             'statut' => $statut,
         ];
         $reponse = api_put('/joueurs/' . $id, $donnees);
-        return isset($reponse['status_code']) && $reponse['status_code'] === 200;
+        return isset($reponse['success']) && $reponse['success'] === true;
     }
 
     public function supprimerJoueur(int $id): bool {
         $reponse = api_delete('/joueurs/' . $id);
-        return isset($reponse['status_code']) && $reponse['status_code'] === 200;
+        return isset($reponse['success']) && $reponse['success'] === true;
     }
 
     public function rechercherLesJoueurs(string $recherche, string $statut): array {

@@ -1,6 +1,6 @@
 <?php
 
-define('API_URL', 'http://localhost:8080');
+define('API_URL', 'https://r401teammanagementapi.alwaysdata.net');
 
 
 // Requete pour obtenir un token de l'api d'authentification
@@ -50,6 +50,20 @@ function api_put($endpoint, $donnees) {
     $contexte = stream_context_create([
         'http' => [
             'method' => 'PUT',
+            'header' => "Content-Type: application/json\r\nAuthorization: Bearer " . $token,
+            'content' => json_encode($donnees)
+        ]
+    ]);
+    $reponse = file_get_contents(API_URL . $endpoint, false, $contexte);
+    return json_decode($reponse, true);
+}
+
+// Requete PATCH vers backend
+function api_patch($endpoint, $donnees) {
+    $token = $_SESSION['token'] ?? '';
+    $contexte = stream_context_create([
+        'http' => [
+            'method' => 'PATCH',
             'header' => "Content-Type: application/json\r\nAuthorization: Bearer " . $token,
             'content' => json_encode($donnees)
         ]

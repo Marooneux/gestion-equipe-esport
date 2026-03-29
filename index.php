@@ -1,4 +1,5 @@
 <?php
+ob_start();
 require_once __DIR__ . '/Psr4AutoloaderClass.php';
 use R301\Psr4AutoloaderClass;
 
@@ -19,7 +20,7 @@ if ($_SERVER["REQUEST_URI"] !== "/login" && !isset($_SESSION ['username'])) {
 <!DOCTYPE html>
 <html lang="fr">
     <head>
-        <title>R3.01</title>
+        <title>R4.01</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" charset="UTF-8"/>
         <link rel="stylesheet" href="/stylesheet.css"/>
         <link rel="icon" type="image/jpg" href="/favicon.jpg">

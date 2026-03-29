@@ -20,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
         $_POST['lieu']
     )) {
         header('Location: /rencontre');
+        exit;
     } else {
         error_log("Erreur lors de la création de la rencontre");
     }
