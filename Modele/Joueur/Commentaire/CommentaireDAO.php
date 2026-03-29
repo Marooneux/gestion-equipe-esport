@@ -29,11 +29,10 @@ class CommentaireDAO {
     );
 }
 
-    public function selectCommentaireByJoueurId(string $joueurId): array {
+    public function selectCommentaireByJoueurId(int $joueurId): array {
         $query = 'SELECT * FROM commentaire WHERE joueur_id = :joueur_id';
         $statement = $this->database->pdo()->prepare($query);
-        $statement->execute(array('joueur_id' => $joueurId));
-        if ($statement->execute()){
+        if ($statement->execute(['joueur_id' => $joueurId])) {
             return array_map(
                 function($commentaire) { return $this->mapToCommentaire($commentaire); },
                 $statement->fetchAll(PDO::FETCH_ASSOC)
@@ -43,7 +42,22 @@ class CommentaireDAO {
         }
     }
 
-    public function insertCommentaire(Commentaire $commentaire, string $joueurId): bool {
+    public function selectCommentaireByIdForJoueur(int $joueurId, int $commentaireId): Commentaire|false
+    {
+        $query = 'SELECT * FROM commentaire WHERE commentaire_id = :commentaire_id AND joueur_id = :joueur_id';
+        $statement = $this->database->pdo()->prepare($query);
+        $statement->bindValue(':commentaire_id', $commentaireId);
+        $statement->bindValue(':joueur_id', $joueurId);
+        $statement->execute();
+
+        if ($statement->rowCount() <= 0) {
+            return false;
+        }
+
+        return $this->mapToCommentaire($statement->fetch(PDO::FETCH_ASSOC));
+    }
+
+    public function insertCommentaire(Commentaire $commentaire, int $joueurId): bool {
         $query = 'INSERT INTO commentaire(contenu,date,joueur_id) 
             values (:contenu,:date,:joueur_id)';
         $statement = $this->database->pdo()->prepare($query);
@@ -54,10 +68,27 @@ class CommentaireDAO {
         return $statement->execute();
     }
 
-    public function deleteCommentaire(string $commentaireId): bool {
-        $query = 'DELETE FROM commentaire WHERE commentaire_id = :commentaireId';
+    public function updateCommentaireByIdForJoueur(int $joueurId, int $commentaireId, string $contenu): bool
+    {
+        $query = 'UPDATE commentaire
+                  SET contenu = :contenu
+                  WHERE commentaire_id = :commentaireId AND joueur_id = :joueurId';
+        $statement = $this->database->pdo()->prepare($query);
+        $statement->bindValue(':contenu', $contenu);
+        $statement->bindValue(':commentaireId', $commentaireId);
+        $statement->bindValue(':joueurId', $joueurId);
+        $statement->execute();
+
+        return $statement->rowCount() > 0;
+    }
+
+    public function deleteCommentaireForJoueur(int $joueurId, int $commentaireId): bool {
+        $query = 'DELETE FROM commentaire WHERE commentaire_id = :commentaireId AND joueur_id = :joueurId';
         $statement = $this->database->pdo()->prepare($query);
         $statement->bindValue(':commentaireId', $commentaireId);
-        return ($statement->execute());
+        $statement->bindValue(':joueurId', $joueurId);
+        $statement->execute();
+
+        return $statement->rowCount() > 0;
     }
 }

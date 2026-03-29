@@ -2,9 +2,8 @@
 namespace R301\Modele\Joueur\Commentaire;
 
 use DateTime;
-use R301\Modele\Joueur\Joueur;
 
-class Commentaire {
+class Commentaire implements \JsonSerializable {
     private int $commentaireId;
     private readonly string $contenu;
     private readonly DateTime $date;
@@ -31,6 +30,14 @@ class Commentaire {
         return $this->date;
     }
 
+    public function jsonSerialize(): array
+    {
+        return [
+            'id' => $this->commentaireId,
+            'contenu' => $this->contenu,
+            'date' => $this->date->format('Y-m-d H:i:s'),
+        ];
+    }
 
 }
 

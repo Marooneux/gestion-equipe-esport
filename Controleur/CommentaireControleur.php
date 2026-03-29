@@ -5,16 +5,16 @@ namespace R301\Controleur;
 use DateTime;
 use R301\Modele\Joueur\Commentaire\Commentaire;
 use R301\Modele\Joueur\Commentaire\CommentaireDAO;
-use R301\Modele\Joueur\Joueur;
 use R301\Modele\Joueur\JoueurDAO;
-use R301\Modele\Joueur\JoueurStatut;
 
 class CommentaireControleur {
     private static ?CommentaireControleur $instance = null;
     private readonly CommentaireDAO $commentaires;
+    private readonly JoueurDAO $joueurs;
 
     private function __construct() {
         $this->commentaires = CommentaireDAO::getInstance();
+        $this->joueurs = JoueurDAO::getInstance();
     }
 
     public static function getInstance(): CommentaireControleur {
@@ -24,10 +24,18 @@ class CommentaireControleur {
         return self::$instance;
     }
 
-    public function ajouterCommentaire(
-        string $contenu,
-        string $joueurId
-    ) : bool {
+    public function listerLesCommentairesDuJoueur(int $joueurId) : array {
+        if ($this->joueurs->selectJoueurById($joueurId) === false) {
+            return [];
+        }
+
+        return $this->commentaires->selectCommentaireByJoueurId($joueurId);
+    }
+
+    public function ajouterCommentaire(string $contenu, int $joueurId): bool {
+        if ($this->joueurs->selectJoueurById($joueurId) === false) {
+            return false;
+        }
 
         $commentaireACreer = new Commentaire(
             0,
@@ -38,11 +46,20 @@ class CommentaireControleur {
         return $this->commentaires->insertCommentaire($commentaireACreer, $joueurId);
     }
 
-    public function listerLesCommentairesDuJoueur(Joueur $joueur) : array {
-        return $this->commentaires->selectCommentaireByJoueurId($joueur->getJoueurId());
+    public function modifierCommentaire(int $joueurId, int $commentaireId, string $contenu): bool
+    {
+        if ($this->joueurs->selectJoueurById($joueurId) === false) {
+            return false;
+        }
+
+        return $this->commentaires->updateCommentaireByIdForJoueur($joueurId, $commentaireId, $contenu);
     }
 
-    public function supprimerCommentaire(string $commentaireId) : bool {
-        return $this->commentaires->deleteCommentaire($commentaireId);
+    public function supprimerCommentaire(int $joueurId, int $commentaireId) : bool {
+        if ($this->joueurs->selectJoueurById($joueurId) === false) {
+            return false;
+        }
+
+        return $this->commentaires->deleteCommentaireForJoueur($joueurId, $commentaireId);
     }
 }
