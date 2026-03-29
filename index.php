@@ -33,6 +33,31 @@ if ($resource === '') {
     $resource = '/';
 }
 
+// In Apache rewrite-all setups, expose docs and OpenAPI before API routing.
+if ($httpMethod === 'GET' && ($resource === '/docs' || $resource === '/docs/index.html')) {
+    $docsFile = __DIR__ . '/docs/index.html';
+    if (is_file($docsFile)) {
+        header('Content-Type:text/html; charset=utf-8');
+        readfile($docsFile);
+        exit;
+    }
+
+    send_error(404, 'Documentation introuvable.', 'DOCS_NOT_FOUND');
+    exit;
+}
+
+if ($httpMethod === 'GET' && $resource === '/openapi.yaml') {
+    $specFile = __DIR__ . '/openapi.yaml';
+    if (is_file($specFile)) {
+        header('Content-Type:application/yaml; charset=utf-8');
+        readfile($specFile);
+        exit;
+    }
+
+    send_error(404, 'Specification OpenAPI introuvable.', 'OPENAPI_NOT_FOUND');
+    exit;
+}
+
 $joueursController = JoueurControleur::getInstance();
 $commentairesController = CommentaireControleur::getInstance();
 $rencontresController = RencontreControleur::getInstance();
