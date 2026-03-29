@@ -19,8 +19,7 @@ class StatistiquesRouteHandler {
     {
         try {
             $data = $this->statistiques->getStatistiquesEquipe();
-            $stats = is_array($data) ? $data : [];
-            send_success(200, 'Statistiques équipe récupérées.', $stats);
+            send_success(200, 'Statistiques équipe récupérées.', $data);
         } catch (PDOException $e) {
             send_error(500, 'Erreur lors de la récupération des statistiques équipe.', 'DATABASE_ERROR');
         }

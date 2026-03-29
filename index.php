@@ -114,6 +114,7 @@ $router->get('/rencontre', $withAuth([$rencontreRouteHandler, 'list']));
 $router->post('/rencontre', $withAuth([$rencontreRouteHandler, 'create']));
 $router->get($rencontreByIdRoute, $withAuth([$rencontreRouteHandler, 'get']));
 $router->put($rencontreByIdRoute, $withAuth([$rencontreRouteHandler, 'update']));
+$router->patch($rencontreByIdRoute, $withAuth([$rencontreRouteHandler, 'setResultat']));
 $router->delete($rencontreByIdRoute, $withAuth([$rencontreRouteHandler, 'delete']));
 
 $router->get('/feuilledematche', $withAuth([$participationRouteHandler, 'list']));
