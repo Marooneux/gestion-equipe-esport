@@ -20,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
         $_POST['lieu']
     )) {
         header('Location: /rencontre');
+        exit;
     } else {
         error_log("Erreur lors de la création de la rencontre");
     }
@@ -29,6 +30,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
     $formulaire->setText("Equipe adverse", "equipeAdverse");
     $formulaire->setText("Adresse", "adresse");
     $formulaire->setSelect("Lieu", ['DOMICILE', 'EXTERIEUR'], "lieu");
-    $formulaire->addButton("Submit", "create", "Valider", "Modifier");
+    $formulaire->addButton("Submit", "create", "Valider", "Ajouter");
     echo $formulaire;
 }

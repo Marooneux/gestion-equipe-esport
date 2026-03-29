@@ -1,39 +1,42 @@
 <?php
 
-define('API_URL', 'http://localhost:8080');
+define('API_URL', 'https://r401teammanagementapi.alwaysdata.net');
 
 
 // Requete pour obtenir un token de l'api d'authentification
-function auth_get_token() {
-    $auth_endpoint = "http://localhost/r401_team_management_auth/api/get_token.php";
-    $donnees = [
-        'login' => 'coach',
-        'password' => 'sport'
-    ];
+function auth_get_token($login, $password) {
     $contexte = stream_context_create([
         'http' => [
             'method' => 'POST',
             'header' => 'Content-Type: application/json',
-            'content' => json_encode($donnees)
+            'content' => json_encode(['login' => $login, 'password' => $password])
         ]
     ]);
-    $reponse = file_get_contents($auth_endpoint, false, $contexte);
+    $reponse = file_get_contents("https://r401auth.alwaysdata.net/auth/login", false, $contexte);
     return json_decode($reponse, true);
 }
 
 
 // Requete GET vers backend
 function api_get($endpoint) {
-    $reponse = file_get_contents(API_URL . $endpoint);
+    $token = $_SESSION['token'] ?? '';
+    $contexte = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'header' => 'Authorization: Bearer ' . $token
+        ]
+    ]);
+    $reponse = file_get_contents(API_URL . $endpoint, false, $contexte);
     return json_decode($reponse, true);
 }
 
 // Requete POST vers backend
 function api_post($endpoint, $donnees) {
+    $token = $_SESSION['token'] ?? '';
     $contexte = stream_context_create([
         'http' => [
             'method' => 'POST',
-            'header' => 'Content-Type: application/json',
+            'header' => "Content-Type: application/json\r\nAuthorization: Bearer " . $token,
             'content' => json_encode($donnees)
         ]
     ]);
@@ -43,10 +46,25 @@ function api_post($endpoint, $donnees) {
 
 // Requete PUT vers backend
 function api_put($endpoint, $donnees) {
+    $token = $_SESSION['token'] ?? '';
     $contexte = stream_context_create([
         'http' => [
             'method' => 'PUT',
-            'header' => 'Content-Type: application/json',
+            'header' => "Content-Type: application/json\r\nAuthorization: Bearer " . $token,
+            'content' => json_encode($donnees)
+        ]
+    ]);
+    $reponse = file_get_contents(API_URL . $endpoint, false, $contexte);
+    return json_decode($reponse, true);
+}
+
+// Requete PATCH vers backend
+function api_patch($endpoint, $donnees) {
+    $token = $_SESSION['token'] ?? '';
+    $contexte = stream_context_create([
+        'http' => [
+            'method' => 'PATCH',
+            'header' => "Content-Type: application/json\r\nAuthorization: Bearer " . $token,
             'content' => json_encode($donnees)
         ]
     ]);
@@ -56,8 +74,12 @@ function api_put($endpoint, $donnees) {
 
 // Requete DELETE vers backend
 function api_delete($endpoint) {
+    $token = $_SESSION['token'] ?? '';
     $contexte = stream_context_create([
-        'http' => ['method' => 'DELETE']
+        'http' => [
+            'method' => 'DELETE',
+            'header' => 'Authorization: Bearer ' . $token
+        ]
     ]);
     $reponse = file_get_contents(API_URL . $endpoint, false, $contexte);
     return json_decode($reponse, true);

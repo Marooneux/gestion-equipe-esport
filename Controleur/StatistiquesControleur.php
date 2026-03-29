@@ -16,13 +16,28 @@ class StatistiquesControleur {
         return self::$instance;
     }
 
-    // TODO: implémenter quand l'endpoint backend sera disponible
     public function getStatistiquesEquipe(): array {
-        return api_get('/statistiques/equipe')['data'] ?? [];
+        $data = api_get('/statistiques')['data'] ?? [];
+        return [
+            'nbVictoires'          => $data['victoires'] ?? 0,
+            'nbNuls'               => $data['nuls'] ?? 0,
+            'nbDefaites'           => $data['defaites'] ?? 0,
+            'pourcentageVictoires' => $data['pourcentage_victoires'] ?? 0,
+            'pourcentageNuls'      => $data['pourcentage_nuls'] ?? 0,
+            'pourcentageDefaites'  => $data['pourcentage_defaites'] ?? 0,
+        ];
     }
 
-    // TODO: implémenter quand l'endpoint backend sera disponible
     public function getStatistiquesJoueurs(): array {
-        return api_get('/statistiques/joueurs')['data'] ?? [];
+        $data = api_get('/statistiques/joueurs')['data'] ?? [];
+        return array_map(fn($s) => [
+            'joueur_id'             => $s['joueur_id'],
+            'posteLePlusPerformant' => $s['poste_le_plus_performant'],
+            'nbConsecutifs'         => $s['nb_rencontres_consecutives'],
+            'nbTitularisations'     => $s['nb_titularisations'],
+            'nbRemplacants'         => $s['nb_remplacant'],
+            'moyenneEvaluations'    => $s['moyenne_evaluations'],
+            'pourcentageGagnes'     => $s['pourcentage_matchs_gagnes'],
+        ], $data);
     }
 }

@@ -2,35 +2,27 @@
 
 namespace R301\Controleur;
 
-use R301\Modele\Utilisateur\UtilisateurDAO;
+require_once __DIR__ . '/ApiClient.php';
 
 class UtilisateurControleur {
     private static ?UtilisateurControleur $instance = null;
-    private readonly UtilisateurDAO $utilisateurs;
 
-    private function __construct() {
-        $this->utilisateurs = UtilisateurDAO::getInstance();
-    }
+    private function __construct() {}
 
     public static function getInstance(): UtilisateurControleur {
-        if (self::$instance == null) {
+        if (self::$instance === null) {
             self::$instance = new UtilisateurControleur();
         }
         return self::$instance;
     }
 
-    public function seConnecter(string $username, string $password): bool {
-        $utilisateurEssayantDeSeConnecter = $this->utilisateurs->getUtilisateur($username);
-
-        if ($utilisateurEssayantDeSeConnecter->getMotDePasse() == $password) {
-            session_set_cookie_params(1800);
-            ini_set('session.gc_maxlifetime', 1800);
-
-            // Store username in session
+    public function seConnecter($username, $password) {
+        $reponse = auth_get_token($username, $password);
+        if ($reponse['status_code'] === 200) {
             $_SESSION['username'] = $username;
+            $_SESSION['token'] = $reponse['data'];
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 }

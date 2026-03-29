@@ -55,7 +55,7 @@ class RencontreControleur {
             'resultat' => null,
         ];
         $reponse = api_post('/rencontre', $donnees);
-        return isset($reponse['status_code']) && $reponse['status_code'] === 201;
+        return isset($reponse['success']) && $reponse['success'] === true;
     }
 
     public function modifierRencontre(
@@ -82,7 +82,7 @@ class RencontreControleur {
             'resultat' => $rencontre['resultat'],
         ];
         $reponse = api_put('/rencontre/' . $id, $donnees);
-        return isset($reponse['status_code']) && $reponse['status_code'] === 200;
+        return isset($reponse['success']) && $reponse['success'] === true;
     }
 
     public function supprimerRencontre(int $id): bool {
@@ -91,11 +91,11 @@ class RencontreControleur {
             return false;
         }
         $reponse = api_delete('/rencontre/' . $id);
-        return isset($reponse['status_code']) && $reponse['status_code'] === 200;
+        return isset($reponse['success']) && $reponse['success'] === true;
     }
 
-    // Non disponible : pas d'endpoint dans le backend
     public function enregistrerResultat(int $id, string $resultat): bool {
-        return false;
+        $reponse = api_patch('/rencontre/' . $id, ['resultat' => $resultat]);
+        return isset($reponse['success']) && $reponse['success'] === true;
     }
 }

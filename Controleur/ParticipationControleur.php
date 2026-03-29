@@ -65,32 +65,67 @@ class ParticipationControleur {
         string $titulaireOuRemplacant
     ): bool {
         $donnees = [
-            'joueur_id' => $joueurId,
+            'joueur_id'    => $joueurId,
             'rencontre_id' => $rencontreId,
-            'poste' => $poste,
-            'titularité' => $titulaireOuRemplacant,
+            'poste'        => $poste,
+            'titularité'   => $titulaireOuRemplacant,
         ];
         $reponse = api_post('/feuilledematche', $donnees);
-        return isset($reponse['status_code']) && $reponse['status_code'] === 201;
+        return isset($reponse['success']) && $reponse['success'] === true;
     }
 
-    // Non disponible : pas d'endpoint PUT /feuilledematche/{id} dans le backend
+    private function getParticipationById(int $participationId): ?array {
+        foreach ($this->listerToutesLesParticipations() as $p) {
+            if ($p['id'] === $participationId) return $p;
+        }
+        return null;
+    }
+
     public function modifierParticipation(int $participationId, string $poste, string $titulaireOuRemplacant, int $joueurId): bool {
-        return false;
+        $p = $this->getParticipationById($participationId);
+        if ($p === null) return false;
+        $donnees = [
+            'id'           => $participationId,
+            'joueur_id'    => $joueurId,
+            'rencontre_id' => $p['rencontre']['id'],
+            'poste'        => $poste,
+            'titularité'   => $titulaireOuRemplacant,
+        ];
+        $reponse = api_put("/feuilledematche/$participationId", $donnees);
+        return isset($reponse['success']) && $reponse['success'] === true;
     }
 
-    // Non disponible : pas d'endpoint DELETE /feuilledematche/{id} dans le backend
     public function supprimerLaParticipation(int $participationId): bool {
-        return false;
+        $reponse = api_delete("/feuilledematche/$participationId");
+        return isset($reponse['success']) && $reponse['success'] === true;
     }
 
-    // Non disponible : pas d'endpoint pour les performances dans le backend
     public function mettreAJourLaPerformance(int $participationId, string $performance): bool {
-        return false;
+        $p = $this->getParticipationById($participationId);
+        if ($p === null) return false;
+        $donnees = [
+            'id'           => $participationId,
+            'joueur_id'    => $p['joueur']['id'],
+            'rencontre_id' => $p['rencontre']['id'],
+            'poste'        => $p['poste'],
+            'titularité'   => $p['titularité'],
+            'performance'  => $performance,
+        ];
+        $reponse = api_put("/feuilledematche/$participationId", $donnees);
+        return isset($reponse['success']) && $reponse['success'] === true;
     }
 
-    // Non disponible : pas d'endpoint pour les performances dans le backend
     public function supprimerLaPerformance(int $participationId): bool {
-        return false;
+        $p = $this->getParticipationById($participationId);
+        if ($p === null) return false;
+        $donnees = [
+            'id'           => $participationId,
+            'joueur_id'    => $p['joueur']['id'],
+            'rencontre_id' => $p['rencontre']['id'],
+            'poste'        => $p['poste'],
+            'titularité'   => $p['titularité'],
+        ];
+        $reponse = api_put("/feuilledematche/$participationId", $donnees);
+        return isset($reponse['success']) && $reponse['success'] === true;
     }
 }
