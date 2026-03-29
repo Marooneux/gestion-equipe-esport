@@ -116,6 +116,32 @@ class RencontreRouteHandler {
         }
     }
 
+    public function setResultat(array $params): void
+    {
+        $id = (int)($params['id'] ?? 0);
+        if ($id <= 0) {
+            send_error(400, 'Identifiant invalide.', 'INVALID_ID');
+            return;
+        }
+
+        $data = $this->requestBodyAsArray();
+        if ($data === null || !isset($data['resultat'])) {
+            send_error(400, 'Champ resultat manquant.', 'INVALID_BODY');
+            return;
+        }
+
+        try {
+            $res = $this->rencontres->enregistrerResultat($id, $data['resultat']);
+            if ($res) {
+                send_success(200, 'Résultat enregistré.', []);
+            } else {
+                send_error(422, 'Impossible d\'enregistrer le résultat (match non passé ou introuvable).', 'VALIDATION_ERROR');
+            }
+        } catch (PDOException $e) {
+            send_error(500, 'Erreur lors de l\'enregistrement du résultat.', 'DATABASE_ERROR');
+        }
+    }
+
     public function delete(array $params): void
     {
         $id = (int)($params['id'] ?? 0);
