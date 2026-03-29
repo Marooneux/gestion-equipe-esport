@@ -6,7 +6,8 @@ use InvalidArgumentException;
 use PDOException;
 use R301\Controleur\RencontreControleur;
 use R301\Modele\Rencontre\Rencontre;
-use function R301\Utils\Http_response\deliver_response;
+use function R301\Utils\Http_response\send_error;
+use function R301\Utils\Http_response\send_success;
 
 class RencontreRouteHandler {
     private readonly RencontreControleur $rencontres;
@@ -16,97 +17,122 @@ class RencontreRouteHandler {
         $this->rencontres = $rencontres;
     }
 
-    private function requestBodyAsArray(): array
+    private function requestBodyAsArray(): ?array
     {
         $body = file_get_contents('php://input');
-        $data = json_decode($body, true);
+        if ($body === false || trim($body) === '') {
+            return [];
+        }
 
-        return is_array($data) ? $data : [];
+        $data = json_decode($body, true);
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($data)) {
+            return null;
+        }
+
+        return $data;
     }
 
     public function list(): void
     {
         try {
             $data = $this->rencontres->listerToutesLesRencontres();
-            if ($data) {
-                deliver_response(200, 'List des rencontres récuperée avec succèes', $data);
-            } else {
-                deliver_response(200, 'La base de données ne contient aucun rencontre.');
-            }
+            $rencontres = is_array($data) ? $data : [];
+            send_success(200, 'Rencontres récupérées.', $rencontres, ['count' => count($rencontres)]);
         } catch (PDOException $e) {
-            deliver_response(500, 'Erreur lors de la récuperation des joueurs.');
+            send_error(500, 'Erreur lors de la récupération des rencontres.', 'DATABASE_ERROR');
         }
     }
 
     public function create(): void
     {
         $data = $this->requestBodyAsArray();
+        if ($data === null) {
+            send_error(400, 'Corps JSON invalide.', 'INVALID_JSON');
+            return;
+        }
 
         try {
             $rencontre = Rencontre::buildRencontreFromArray($data);
             $this->rencontres->ajouterRencontreFromArray($rencontre);
-            deliver_response(201, 'Données crée avec succés.');
+            send_success(201, 'Rencontre créée.', []);
         } catch (PDOException $e) {
-            deliver_response(500, "Erreur lors de l'insertion du rencontre");
+            send_error(500, "Erreur lors de la création de la rencontre.", 'DATABASE_ERROR');
         } catch (InvalidArgumentException $e) {
-            deliver_response(400, $e->getMessage());
+            send_error(422, 'Données de rencontre invalides.', 'VALIDATION_ERROR', $e->getMessage());
         }
     }
 
     public function get(array $params): void
     {
         $id = (int)($params['id'] ?? 0);
+        if ($id <= 0) {
+            send_error(400, 'Identifiant invalide.', 'INVALID_ID');
+            return;
+        }
 
         try {
             $data = $this->rencontres->getRencontreById($id);
             if ($data === false) {
-                deliver_response(404, "Le joueurs d'id $id n'existe pas");
+                send_error(404, 'Rencontre introuvable.', 'MATCH_NOT_FOUND');
             } else {
-                deliver_response(200, 'Données récuperée avec succèes', $data);
+                send_success(200, 'Rencontre récupérée.', $data);
             }
         } catch (PDOException $e) {
-            deliver_response(404, "Le joueurs d'id $id n'existe pas");
+            send_error(500, 'Erreur lors de la récupération de la rencontre.', 'DATABASE_ERROR');
         }
     }
 
     public function update(array $params): void
     {
         $id = (int)($params['id'] ?? 0);
+        if ($id <= 0) {
+            send_error(400, 'Identifiant invalide.', 'INVALID_ID');
+            return;
+        }
+
         $data = $this->requestBodyAsArray();
+        if ($data === null) {
+            send_error(400, 'Corps JSON invalide.', 'INVALID_JSON');
+            return;
+        }
 
         try {
             $rencontreAModifier = Rencontre::buildRencontreFromArray($data);
             if ($rencontreAModifier === false) {
-                deliver_response(400, 'Les données de la rencontre sont invalides.');
+                send_error(422, 'Données de rencontre invalides.', 'VALIDATION_ERROR');
                 return;
             }
             $res = $this->rencontres->modifierRencontreByArray($rencontreAModifier);
 
             if ($res) {
-                deliver_response(200, 'Données du rencontre modifié avec succées.');
+                send_success(200, 'Rencontre mise à jour.', []);
             } else {
-                deliver_response(404, "Rencontre d'id $id n'existe pas");
+                send_error(404, 'Rencontre introuvable.', 'MATCH_NOT_FOUND');
             }
         } catch (PDOException $e) {
-            deliver_response(500, 'Erreur pendand la modification de la ressource');
+            send_error(500, 'Erreur lors de la mise à jour de la rencontre.', 'DATABASE_ERROR');
         } catch (InvalidArgumentException $e) {
-            deliver_response(400, $e->getMessage());
+            send_error(422, 'Données de rencontre invalides.', 'VALIDATION_ERROR', $e->getMessage());
         }
     }
 
     public function delete(array $params): void
     {
         $id = (int)($params['id'] ?? 0);
+        if ($id <= 0) {
+            send_error(400, 'Identifiant invalide.', 'INVALID_ID');
+            return;
+        }
 
         try {
             $data = $this->rencontres->supprimerRencontre($id);
             if ($data === false) {
-                deliver_response(404, "Rencontre d'id $id n'existe pas");
+                send_error(404, 'Rencontre introuvable.', 'MATCH_NOT_FOUND');
             } else {
-                deliver_response(200, "Rencontre d'id $id supprimée avec succèes");
+                send_success(200, 'Rencontre supprimée.', []);
             }
         } catch (PDOException $e) {
-            deliver_response(404, "Rencontre d'id $id n'existe pas");
+            send_error(500, 'Erreur lors de la suppression de la rencontre.', 'DATABASE_ERROR');
         }
     }
 }

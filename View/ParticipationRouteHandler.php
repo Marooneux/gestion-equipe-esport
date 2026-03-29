@@ -5,7 +5,8 @@ namespace R301\View;
 use InvalidArgumentException;
 use PDOException;
 use R301\Controleur\ParticipationControleur;
-use function R301\Utils\Http_response\deliver_response;
+use function R301\Utils\Http_response\send_error;
+use function R301\Utils\Http_response\send_success;
 
 class ParticipationRouteHandler {
     private readonly ParticipationControleur $participations;
@@ -15,91 +16,122 @@ class ParticipationRouteHandler {
         $this->participations = $participations;
     }
 
-    private function requestBodyAsArray(): array
+    private function requestBodyAsArray(): ?array
     {
         $body = file_get_contents('php://input');
-        $data = json_decode($body, true);
+        if ($body === false || trim($body) === '') {
+            return [];
+        }
 
-        return is_array($data) ? $data : [];
+        $data = json_decode($body, true);
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($data)) {
+            return null;
+        }
+
+        return $data;
     }
 
     public function list(): void
     {
         try {
             $data = $this->participations->listerToutesLesParticipations();
-            if ($data) {
-                deliver_response(200, 'Liste de toutes les participations récuperée avec succèes', $data);
-            } else {
-                deliver_response(200, 'La base de données ne contient aucun participation enregistré.');
-            }
+            $participations = is_array($data) ? $data : [];
+            send_success(200, 'Participations récupérées.', $participations, ['count' => count($participations)]);
         } catch (PDOException $e) {
-            deliver_response(500, 'Erreur lors de la récuperation des participations.');
+            send_error(500, 'Erreur lors de la récupération des participations.', 'DATABASE_ERROR');
         }
     }
 
     public function create(): void
     {
         $data = $this->requestBodyAsArray();
+        if ($data === null) {
+            send_error(400, 'Corps JSON invalide.', 'INVALID_JSON');
+            return;
+        }
 
         try {
             $participation = $this->participations->buildParticipationFromArray($data);
             if ($this->participations->assignerUnParticipantByArray($participation)) {
-                deliver_response(201, 'Données crée avec succés.');
+                send_success(201, 'Participation créée.', []);
             } else {
-                deliver_response(400, "Problem d'insertion");
+                send_error(409, "Impossible de créer la participation.", 'PARTICIPATION_CONFLICT');
             }
         } catch (PDOException $e) {
-            deliver_response(500, "Erreur lors de l'insertion du joueur");
+            send_error(500, "Erreur lors de la création de la participation.", 'DATABASE_ERROR');
+        } catch (InvalidArgumentException $e) {
+            send_error(422, 'Données de participation invalides.', 'VALIDATION_ERROR', $e->getMessage());
         }
     }
 
     public function getFeuilleDeMatch(array $params): void
     {
         $id = (int)($params['id'] ?? 0);
+        if ($id <= 0) {
+            send_error(400, 'Identifiant invalide.', 'INVALID_ID');
+            return;
+        }
 
         try {
             $data = $this->participations->getFeuilleDeMatch($id);
             if ($data === false) {
-                deliver_response(404, "Le joueurs d'id $id n'existe pas");
+                send_error(404, 'Feuille de match introuvable.', 'MATCH_SHEET_NOT_FOUND');
             } else {
-                deliver_response(200, 'Données récuperée avec succèes', $data);
+                send_success(200, 'Feuille de match récupérée.', $data);
             }
         } catch (PDOException $e) {
-            deliver_response(404, "Le joueurs d'id $id n'existe pas");
+            send_error(500, 'Erreur lors de la récupération de la feuille de match.', 'DATABASE_ERROR');
         }
     }
 
     public function update(array $params): void
     {
+        $id = (int)($params['id'] ?? 0);
+        if ($id <= 0) {
+            send_error(400, 'Identifiant invalide.', 'INVALID_ID');
+            return;
+        }
+
         $data = $this->requestBodyAsArray();
+        if ($data === null) {
+            send_error(400, 'Corps JSON invalide.', 'INVALID_JSON');
+            return;
+        }
 
         try {
             $participationAModifier = $this->participations->buildParticipationFromArray($data);
+            if (method_exists($participationAModifier, 'setParticipationId')) {
+                $participationAModifier->setParticipationId($id);
+            }
             $res = $this->participations->modifierParticipationByArray($participationAModifier);
 
             if ($res) {
-                deliver_response(200, 'Données du participation modifié avec succées.');
+                send_success(200, 'Participation mise à jour.', []);
             } else {
-                $id = (int)($params['id'] ?? 0);
-                deliver_response(404, "Participation d'id $id n'existe pas");
+                send_error(404, 'Participation introuvable.', 'PARTICIPATION_NOT_FOUND');
             }
         } catch (PDOException $e) {
-            deliver_response(500, 'Erreur pendand la modification de la ressource');
+            send_error(500, 'Erreur lors de la mise à jour de la participation.', 'DATABASE_ERROR');
         } catch (InvalidArgumentException $e) {
-            deliver_response(400, $e->getMessage());
+            send_error(422, 'Données de participation invalides.', 'VALIDATION_ERROR', $e->getMessage());
         }
     }
 
     public function delete(array $params): void
     {
         $id = (int)($params['id'] ?? 0);
-        $data = $this->participations->supprimerLaParticipation($id);
-
-        if ($data === false) {
-            deliver_response(404, "Performance d'id $id n'existe pas");
+        if ($id <= 0) {
+            send_error(400, 'Identifiant invalide.', 'INVALID_ID');
             return;
         }
 
-        deliver_response(200, "Performance d'id $id supprimée avec succèes");
+        $data = $this->participations->supprimerLaParticipation($id);
+
+        if ($data === false) {
+            send_error(404, 'Participation introuvable.', 'PARTICIPATION_NOT_FOUND');
+            return;
+        }
+
+        send_success(200, 'Participation supprimée.', []);
     }
 }

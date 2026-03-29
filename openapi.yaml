@@ -1,0 +1,955 @@
+openapi: 3.0.3
+info:
+  title: API Team Management
+  version: 1.0.0
+  description: API de gestion des joueurs, rencontres, participations, statistiques et commentaires.
+servers:
+  - url: http://team_management_api.local
+security:
+  - bearerAuth: []
+tags:
+  - name: Joueurs
+  - name: Commentaires
+  - name: Rencontres
+  - name: FeuilleDeMatch
+  - name: Statistiques
+paths:
+  /joueurs:
+    get:
+      tags: [Joueurs]
+      summary: Lister les joueurs
+      responses:
+        '200':
+          description: Liste des joueurs
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/JoueurWithCommentaires'
+                      meta:
+                        $ref: '#/components/schemas/CountMeta'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/DatabaseError'
+    post:
+      tags: [Joueurs]
+      summary: Créer un joueur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoueurCreateRequest'
+      responses:
+        '201':
+          description: Joueur créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/InvalidJsonError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/DatabaseError'
+
+  /joueurs/{id}:
+    parameters:
+      - $ref: '#/components/parameters/PlayerId'
+    get:
+      tags: [Joueurs]
+      summary: Récupérer un joueur par id
+      responses:
+        '200':
+          description: Joueur trouvé
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/JoueurWithCommentaires'
+        '400':
+          $ref: '#/components/responses/InvalidIdError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/PlayerNotFoundError'
+        '500':
+          $ref: '#/components/responses/DatabaseError'
+    put:
+      tags: [Joueurs]
+      summary: Mettre à jour un joueur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoueurUpdateRequest'
+      responses:
+        '200':
+          description: Joueur mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/InvalidJsonOrIdError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/PlayerNotFoundError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/DatabaseError'
+    delete:
+      tags: [Joueurs]
+      summary: Supprimer un joueur
+      responses:
+        '200':
+          description: Joueur supprimé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/InvalidIdError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/PlayerNotFoundError'
+
+  /joueurs/{id}/commentaires:
+    parameters:
+      - $ref: '#/components/parameters/PlayerId'
+    get:
+      tags: [Commentaires]
+      summary: Lister les commentaires d'un joueur
+      responses:
+        '200':
+          description: Liste des commentaires
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Commentaire'
+                      meta:
+                        $ref: '#/components/schemas/CountMeta'
+        '400':
+          $ref: '#/components/responses/InvalidPlayerIdError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/DatabaseError'
+    post:
+      tags: [Commentaires]
+      summary: Ajouter un commentaire à un joueur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentaireRequest'
+      responses:
+        '201':
+          description: Commentaire créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/InvalidJsonOrPlayerIdError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/PlayerNotFoundError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/DatabaseError'
+
+  /joueurs/{id}/commentaires/{commentaireId}:
+    parameters:
+      - $ref: '#/components/parameters/PlayerId'
+      - $ref: '#/components/parameters/CommentaireId'
+    put:
+      tags: [Commentaires]
+      summary: Modifier un commentaire
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentaireRequest'
+      responses:
+        '200':
+          description: Commentaire mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/InvalidIdOrJsonError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/CommentNotFoundError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/DatabaseError'
+    delete:
+      tags: [Commentaires]
+      summary: Supprimer un commentaire
+      responses:
+        '200':
+          description: Commentaire supprimé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/InvalidIdError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/CommentNotFoundError'
+        '500':
+          $ref: '#/components/responses/DatabaseError'
+
+  /rencontre:
+    get:
+      tags: [Rencontres]
+      summary: Lister les rencontres
+      responses:
+        '200':
+          description: Liste des rencontres
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Rencontre'
+                      meta:
+                        $ref: '#/components/schemas/CountMeta'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/DatabaseError'
+    post:
+      tags: [Rencontres]
+      summary: Créer une rencontre
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RencontreRequest'
+      responses:
+        '201':
+          description: Rencontre créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/InvalidJsonError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/DatabaseError'
+
+  /rencontre/{id}:
+    parameters:
+      - $ref: '#/components/parameters/MatchId'
+    get:
+      tags: [Rencontres]
+      summary: Récupérer une rencontre
+      responses:
+        '200':
+          description: Rencontre trouvée
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Rencontre'
+        '400':
+          $ref: '#/components/responses/InvalidIdError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/MatchNotFoundError'
+        '500':
+          $ref: '#/components/responses/DatabaseError'
+    put:
+      tags: [Rencontres]
+      summary: Mettre à jour une rencontre
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RencontreRequest'
+      responses:
+        '200':
+          description: Rencontre mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/InvalidJsonOrIdError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/MatchNotFoundError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/DatabaseError'
+    delete:
+      tags: [Rencontres]
+      summary: Supprimer une rencontre
+      responses:
+        '200':
+          description: Rencontre supprimée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/InvalidIdError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/MatchNotFoundError'
+        '500':
+          $ref: '#/components/responses/DatabaseError'
+
+  /feuilledematche:
+    get:
+      tags: [FeuilleDeMatch]
+      summary: Lister les participations
+      responses:
+        '200':
+          description: Liste des participations
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Participation'
+                      meta:
+                        $ref: '#/components/schemas/CountMeta'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/DatabaseError'
+    post:
+      tags: [FeuilleDeMatch]
+      summary: Créer une participation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipationRequest'
+      responses:
+        '201':
+          description: Participation créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/InvalidJsonError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '409':
+          $ref: '#/components/responses/ParticipationConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/DatabaseError'
+
+  /feuilledematche/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ParticipationId'
+    get:
+      tags: [FeuilleDeMatch]
+      summary: Récupérer une feuille de match
+      responses:
+        '200':
+          description: Feuille de match
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FeuilleDeMatch'
+        '400':
+          $ref: '#/components/responses/InvalidIdError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/MatchSheetNotFoundError'
+        '500':
+          $ref: '#/components/responses/DatabaseError'
+    put:
+      tags: [FeuilleDeMatch]
+      summary: Mettre à jour une participation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipationRequest'
+      responses:
+        '200':
+          description: Participation mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/InvalidJsonOrIdError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/ParticipationNotFoundError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/DatabaseError'
+    delete:
+      tags: [FeuilleDeMatch]
+      summary: Supprimer une participation
+      responses:
+        '200':
+          description: Participation supprimée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/InvalidIdError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/ParticipationNotFoundError'
+
+  /statistiques:
+    get:
+      tags: [Statistiques]
+      summary: Statistiques équipe
+      responses:
+        '200':
+          description: Statistiques équipe
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/DatabaseError'
+
+  /statistiques/joueurs:
+    get:
+      tags: [Statistiques]
+      summary: Statistiques de tous les joueurs
+      responses:
+        '200':
+          description: Statistiques joueurs
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                      meta:
+                        $ref: '#/components/schemas/CountMeta'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/DatabaseError'
+
+  /statistiques/joueurs/{id}:
+    parameters:
+      - $ref: '#/components/parameters/PlayerId'
+    get:
+      tags: [Statistiques]
+      summary: Statistiques d'un joueur
+      responses:
+        '200':
+          description: Statistiques du joueur
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+        '400':
+          $ref: '#/components/responses/InvalidIdError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/PlayerNotFoundError'
+        '500':
+          $ref: '#/components/responses/DatabaseError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PlayerId:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    CommentaireId:
+      in: path
+      name: commentaireId
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    MatchId:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    ParticipationId:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+
+  schemas:
+    SuccessResponse:
+      type: object
+      required: [success, message, data]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Operation reussie.
+        data:
+          oneOf:
+            - type: object
+            - type: array
+              items:
+                type: object
+            - type: string
+            - type: integer
+            - type: number
+            - type: boolean
+        meta:
+          type: object
+          additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      required: [success, message, error]
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Une erreur est survenue.
+        error:
+          type: object
+          required: [code]
+          properties:
+            code:
+              type: string
+              example: DATABASE_ERROR
+            details:
+              type: string
+            fields:
+              type: object
+              additionalProperties: true
+
+    CountMeta:
+      type: object
+      properties:
+        count:
+          type: integer
+          example: 3
+
+    Commentaire:
+      type: object
+      required: [id, contenu, date]
+      properties:
+        id:
+          type: integer
+          example: 1
+        contenu:
+          type: string
+          example: Bon match.
+        date:
+          type: string
+          format: date-time
+          example: '2026-03-29 18:24:00'
+
+    Joueur:
+      type: object
+      required: [id, nom, prenom, numero_licence, date_naissance, taille, poids, statut]
+      properties:
+        id:
+          type: integer
+          example: 10
+        nom:
+          type: string
+          example: LEE
+        prenom:
+          type: string
+          example: Sang-hyeok
+        numero_licence:
+          type: string
+          example: '00010'
+        date_naissance:
+          type: string
+          format: date
+          example: '1996-05-07'
+        taille:
+          type: integer
+          example: 165
+        poids:
+          type: integer
+          example: 60
+        statut:
+          type: string
+          example: ACTIF
+
+    JoueurWithCommentaires:
+      allOf:
+        - $ref: '#/components/schemas/Joueur'
+        - type: object
+          properties:
+            commentaires:
+              type: array
+              items:
+                $ref: '#/components/schemas/Commentaire'
+
+    JoueurCreateRequest:
+      type: object
+      required: [id, nom, prenom, numero_licence, date_naissance, taille, poids]
+      properties:
+        id:
+          type: integer
+          example: 11
+        nom:
+          type: string
+        prenom:
+          type: string
+        numero_licence:
+          type: string
+        date_naissance:
+          type: string
+          format: date
+        taille:
+          type: integer
+        poids:
+          type: integer
+        statut:
+          type: string
+          nullable: true
+
+    JoueurUpdateRequest:
+      $ref: '#/components/schemas/JoueurCreateRequest'
+
+    CommentaireRequest:
+      type: object
+      required: [contenu]
+      properties:
+        contenu:
+          type: string
+          example: Tres bonne progression.
+
+    Rencontre:
+      type: object
+      properties:
+        id:
+          type: integer
+        date_heure:
+          type: object
+        equipe_adverse:
+          type: string
+        adresse:
+          type: string
+        lieu_recontre:
+          type: string
+        resultat:
+          type: string
+
+    RencontreRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+        date_heure:
+          type: object
+        equipe_adverse:
+          type: string
+        adresse:
+          type: string
+        lieu_recontre:
+          type: string
+        resultat:
+          type: string
+
+    Participation:
+      type: object
+      properties:
+        id:
+          type: integer
+        joueur:
+          type: object
+        rencontre:
+          type: object
+        titularite:
+          type: string
+        performance:
+          type: string
+        poste:
+          type: string
+
+    FeuilleDeMatch:
+      type: object
+      additionalProperties: true
+
+    ParticipationRequest:
+      type: object
+      additionalProperties: true
+
+  responses:
+    UnauthorizedError:
+      description: Token manquant ou invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Token invalide ou expire.
+            error:
+              code: UNAUTHORIZED
+
+    InvalidJsonError:
+      description: JSON invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Corps JSON invalide.
+            error:
+              code: INVALID_JSON
+
+    InvalidIdError:
+      description: Identifiant invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Identifiant invalide.
+            error:
+              code: INVALID_ID
+
+    InvalidPlayerIdError:
+      description: Identifiant joueur invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Identifiant joueur invalide.
+            error:
+              code: INVALID_PLAYER_ID
+
+    InvalidJsonOrIdError:
+      description: JSON ou identifiant invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InvalidJsonOrPlayerIdError:
+      description: JSON ou identifiant joueur invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InvalidIdOrJsonError:
+      description: Identifiants ou JSON invalides
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    ValidationError:
+      description: Erreur de validation metier
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Donnees invalides.
+            error:
+              code: VALIDATION_ERROR
+              details: Le champ requis est manquant.
+
+    DatabaseError:
+      description: Erreur serveur
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Erreur base de donnees.
+            error:
+              code: DATABASE_ERROR
+
+    PlayerNotFoundError:
+      description: Joueur introuvable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Joueur introuvable.
+            error:
+              code: PLAYER_NOT_FOUND
+
+    MatchNotFoundError:
+      description: Rencontre introuvable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Rencontre introuvable.
+            error:
+              code: MATCH_NOT_FOUND
+
+    MatchSheetNotFoundError:
+      description: Feuille de match introuvable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Feuille de match introuvable.
+            error:
+              code: MATCH_SHEET_NOT_FOUND
+
+    ParticipationNotFoundError:
+      description: Participation introuvable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Participation introuvable.
+            error:
+              code: PARTICIPATION_NOT_FOUND
+
+    ParticipationConflictError:
+      description: Conflit de participation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Impossible de creer la participation.
+            error:
+              code: PARTICIPATION_CONFLICT
+
+    CommentNotFoundError:
+      description: Commentaire introuvable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Commentaire introuvable pour ce joueur.
+            error:
+              code: COMMENT_NOT_FOUND

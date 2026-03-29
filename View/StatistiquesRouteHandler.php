@@ -4,7 +4,8 @@ namespace R301\View;
 
 use PDOException;
 use R301\Controleur\StatistiquesControleur;
-use function R301\Utils\Http_response\deliver_response;
+use function R301\Utils\Http_response\send_error;
+use function R301\Utils\Http_response\send_success;
 
 class StatistiquesRouteHandler {
     private readonly StatistiquesControleur $statistiques;
@@ -18,13 +19,10 @@ class StatistiquesRouteHandler {
     {
         try {
             $data = $this->statistiques->getStatistiquesEquipe();
-            if ($data) {
-                deliver_response(200, 'Stats récuperée avec succèes', $data);
-            } else {
-                deliver_response(200, 'La base de données ne contient aucun rencontre.');
-            }
+            $stats = is_array($data) ? $data : [];
+            send_success(200, 'Statistiques équipe récupérées.', $stats);
         } catch (PDOException $e) {
-            deliver_response(500, 'Erreur lors de la récuperation des joueurs.');
+            send_error(500, 'Erreur lors de la récupération des statistiques équipe.', 'DATABASE_ERROR');
         }
     }
 
@@ -32,29 +30,30 @@ class StatistiquesRouteHandler {
     {
         try {
             $data = $this->statistiques->getStatistiquesTousLesJoueurs();
-            if ($data) {
-                deliver_response(200, 'Stats des joueurs récuperées avec succèes', $data);
-            } else {
-                deliver_response(200, 'Aucun joueur trouvé.');
-            }
+            $stats = is_array($data) ? $data : [];
+            send_success(200, 'Statistiques joueurs récupérées.', $stats, ['count' => count($stats)]);
         } catch (PDOException $e) {
-            deliver_response(500, 'Erreur lors de la récupération des stats joueurs.');
+            send_error(500, 'Erreur lors de la récupération des statistiques joueurs.', 'DATABASE_ERROR');
         }
     }
 
     public function getJoueur(array $params): void
     {
         $id = (int)($params['id'] ?? 0);
+        if ($id <= 0) {
+            send_error(400, 'Identifiant invalide.', 'INVALID_ID');
+            return;
+        }
 
         try {
             $data = $this->statistiques->getStatistiquesDUnJoueur($id);
             if ($data === false) {
-                deliver_response(404, "Joueur d'id $id n'existe pas");
+                send_error(404, 'Joueur introuvable.', 'PLAYER_NOT_FOUND');
             } else {
-                deliver_response(200, 'Stats du joueur récupérées avec succès', $data);
+                send_success(200, 'Statistiques du joueur récupérées.', $data);
             }
         } catch (PDOException $e) {
-            deliver_response(500, 'Erreur lors de la récupération des stats du joueur.');
+            send_error(500, 'Erreur lors de la récupération des statistiques du joueur.', 'DATABASE_ERROR');
         }
     }
 }
