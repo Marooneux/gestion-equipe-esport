@@ -67,7 +67,7 @@ class RencontreDAO {
         $statement->bindValue(':equipe_adverse', $rencontreACreer->getEquipeAdverse());
         $statement->bindValue(':adresse', $rencontreACreer->getAdresse());
         $statement->bindValue(':lieu', $rencontreACreer->getLieu()->name);
-        $statement->bindValue(':resultat', $rencontreACreer->getResultat()->name);
+        $statement->bindValue(':resultat', $rencontreACreer->getResultat()?->name);
 
         return $statement->execute();
     }
@@ -101,6 +101,11 @@ class RencontreDAO {
     }
 
     public function supprimerRencontre(int $rencontreId) : bool {
+        $queryParticipations = 'DELETE FROM participation WHERE rencontre_id = :rencontreId';
+        $statement=$this->database->pdo()->prepare($queryParticipations);
+        $statement->bindValue(':rencontreId', $rencontreId);
+        $statement->execute();
+
         $query = 'DELETE FROM rencontre WHERE rencontre_id = :rencontreId';
         $statement=$this->database->pdo()->prepare($query);
         $statement->bindValue(':rencontreId', $rencontreId);
