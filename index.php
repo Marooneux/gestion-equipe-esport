@@ -1,314 +1,96 @@
 <?php
+
 require_once $_SERVER['DOCUMENT_ROOT'] . '/Psr4AutoloaderClass.php';
 require_once 'Utils/Http_Response.php';
-use R301\Psr4AutoloaderClass;
-use function R301\Utils\Http_response\deliver_response;
-use R301\Controleur\JoueurControleur;
-use R301\Modele\Joueur\Joueur;
-use R301\Controleur\RencontreControleur;
-use R301\Modele\Rencontre\Rencontre;
-use R301\Controleur\ParticipationControleur;
-use R301\Modele\Participation\Participation;
-use R301\Controleur\StatistiquesControleur;
+require_once 'Utils/Jwt_Util.php';
 
-$loader = new Psr4AutoloaderClass;
-// register the autoloader
+use R301\Psr4AutoloaderClass;
+use R301\Controleur\JoueurControleur;
+use R301\Controleur\ParticipationControleur;
+use R301\Controleur\RencontreControleur;
+use R301\Controleur\StatistiquesControleur;
+use R301\View\JoueurRouteHandler;
+use R301\View\ParticipationRouteHandler;
+use R301\View\RencontreRouteHandler;
+use R301\View\StatistiquesRouteHandler;
+use R301\Utils\Routing\Router;
+use function R301\Utils\Jwt\get_bearer_token;
+use function R301\Utils\Jwt\verify_token_with_auth_api;
+use function R301\Utils\Http_response\deliver_response;
+
+const AUTH_VERIFY_URL = 'https://r401auth.alwaysdata.net/auth/verify';
+
+$loader = new Psr4AutoloaderClass();
 $loader->register();
-// register the base directories for the namespace prefix
 $loader->addNamespace('R301', '.');
 
-$http_method = $_SERVER["REQUEST_METHOD"];
-$resource = strtok($_SERVER["REQUEST_URI"], '?');
+$httpMethod = $_SERVER['REQUEST_METHOD'];
+$resource = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$resource = rtrim($resource, '/');
+if ($resource === '') {
+    $resource = '/';
+}
+
 $joueursController = JoueurControleur::getInstance();
 $rencontresController = RencontreControleur::getInstance();
 $participationsController = ParticipationControleur::getInstance();
 $statistiquesController = StatistiquesControleur::getInstance();
 
+$joueurRouteHandler = new JoueurRouteHandler($joueursController);
+$rencontreRouteHandler = new RencontreRouteHandler($rencontresController);
+$participationRouteHandler = new ParticipationRouteHandler($participationsController);
+$statistiquesRouteHandler = new StatistiquesRouteHandler($statistiquesController);
 
-if(rtrim($resource, "/") == "/joueurs") {
-    switch($http_method) {
-        case 'GET':
-            try {
-                $data = $joueursController->listerTousLesJoueurs();
-                if($data == true) {
-                    deliver_response(200, "Liste de joueurs récuperée avec succèes", $data);
-                } else {
-                    deliver_response(200, "La base de données ne contient aucun joueur.");
-                }
-            } catch(PDOException $e) {
-                deliver_response(500, "Erreur lors de la récuperation des joueurs.");
-            }
-            break;
-        case 'POST':
-            $body = file_get_contents("php://input");
-            $data = json_decode($body, true);
-            $joueur = Joueur::buildJoueurFromArray($data);
-            try {
-                $joueursController->ajouterJoueurFromArray($joueur);
-                deliver_response(201, "Données crée avec succés.");
-            } catch(PDOException $e) {
-                deliver_response(500, "Erreur lors de l'insertion du joueur");
-            }
-            break;
-            
-    }
+$router = new Router();
 
+$withAuth = function (callable $handler): callable {
+    return function (array $params = []) use ($handler): void {
+        $token = get_bearer_token();
+        if ($token === null) {
+            deliver_response(401, 'Token manquant');
+            return;
+        }
+
+        if (!verify_token_with_auth_api($token, AUTH_VERIFY_URL)) {
+            deliver_response(401, 'Token invalide ou expiré');
+            return;
+        }
+
+        if ($params === []) {
+            $handler();
+            return;
+        }
+
+        $handler($params);
+    };
+};
+
+$joueurByIdRoute = '/joueurs/{id}';
+$rencontreByIdRoute = '/rencontre/{id}';
+$feuilleDeMatcheByIdRoute = '/feuilledematche/{id}';
+
+$router->get('/joueurs', $withAuth([$joueurRouteHandler, 'list']));
+$router->post('/joueurs', $withAuth([$joueurRouteHandler, 'create']));
+$router->get($joueurByIdRoute, $withAuth([$joueurRouteHandler, 'get']));
+$router->put($joueurByIdRoute, $withAuth([$joueurRouteHandler, 'update']));
+$router->delete($joueurByIdRoute, $withAuth([$joueurRouteHandler, 'delete']));
+
+$router->get('/rencontre', $withAuth([$rencontreRouteHandler, 'list']));
+$router->post('/rencontre', $withAuth([$rencontreRouteHandler, 'create']));
+$router->get($rencontreByIdRoute, $withAuth([$rencontreRouteHandler, 'get']));
+$router->put($rencontreByIdRoute, $withAuth([$rencontreRouteHandler, 'update']));
+$router->delete($rencontreByIdRoute, $withAuth([$rencontreRouteHandler, 'delete']));
+
+$router->get('/feuilledematche', $withAuth([$participationRouteHandler, 'list']));
+$router->post('/feuilledematche', $withAuth([$participationRouteHandler, 'create']));
+$router->get($feuilleDeMatcheByIdRoute, $withAuth([$participationRouteHandler, 'getFeuilleDeMatch']));
+$router->put($feuilleDeMatcheByIdRoute, $withAuth([$participationRouteHandler, 'update']));
+$router->delete($feuilleDeMatcheByIdRoute, $withAuth([$participationRouteHandler, 'delete']));
+
+$router->get('/statistiques', $withAuth([$statistiquesRouteHandler, 'getEquipe']));
+$router->get('/statistiques/joueurs', $withAuth([$statistiquesRouteHandler, 'getJoueurs']));
+$router->get('/statistiques/joueurs/{id}', $withAuth([$statistiquesRouteHandler, 'getJoueur']));
+
+if (!$router->dispatch($httpMethod, $resource)) {
+    deliver_response(404, 'Route non trouvée');
 }
-
-if(preg_match('#^/joueurs/([0-9]+)$#', $resource, $matches) == 1) {
-    #Get the id
-    $id = $matches[1];
-
-    switch($http_method) {
-        case 'GET':
-            $data = $joueursController->getJoueurById($id);
-            if($data == false) {
-                deliver_response(404, "Le joueurs d'id $id n'existe pas");
-            } else {
-                deliver_response(200, "Données récuperée avec succèes", $data);
-            }
-            break;
-        case 'PUT':
-            $body = file_get_contents("php://input");
-            $data = json_decode($body, true);
-            try {
-                $joueurAModifier = Joueur::buildJoueurFromArray($data);
-                $joueurAModifier->setJoueurId($id);
-                $res = $joueursController->modifierJoueurByArray($joueurAModifier);
-
-                if($res) {
-                    deliver_response(200, "Données du joueur modifié avec succées.");
-                } else {
-                    deliver_response(404, "Joueur d'id $id n'existe pas");
-                }
-            } catch(PDOException $e) {
-                deliver_response(500, "Erreur pendand la modification de la ressource");
-            } catch(InvalidArgumentException $e) {
-                deliver_response(400, $e->getMessage());
-            }
-            break;
-        case 'DELETE':
-            $data = $joueursController->supprimerJoueur($id);
-            print_r($data);
-
-            if($data == false) {
-                deliver_response(404, "Joueur d'id $id n'existe pas");
-                } else {
-                deliver_response(200, "Joueur d'id $id supprimée avec succèes");
-            }
-            break;
-    }
-}
-
-if(rtrim($resource, "/") == '/rencontre') {
-    switch($http_method) {
-        case 'GET':
-            try {
-                $data = $rencontresController->listerToutesLesRencontres();
-                if($data == true) {
-                    deliver_response(200, "List des rencontres récuperée avec succèes", $data);
-                } else {
-                    deliver_response(200, "La base de données ne contient aucun rencontre.");
-                }
-            } catch(PDOException $e) {
-                deliver_response(500, "Erreur lors de la récuperation des joueurs.");
-            }
-            break;
-        case 'POST':
-            $body = file_get_contents("php://input");
-            $data = json_decode($body, true);
-            try {
-                $rencontre = Rencontre::buildRencontreFromArray($data);
-                if($rencontre == false) { // La date fourni est < à now.
-
-                } 
-                $rencontresController->ajouterRencontreFromArray($rencontre);
-                deliver_response(201, "Données crée avec succés.");
-            } catch(PDOException $e) {
-                deliver_response(500, "Erreur lors de l'insertion du rencontre");
-            } catch(InvalidArgumentException $e) {
-                deliver_response(400, $e->getMessage());
-            } 
-            break;
-    }
-}
-
-echo $resource;
-
-if(preg_match('#^/rencontre/([0-9]+)$#', $resource, $matches) == 1) {
-    #Get the id
-    $id = $matches[1];
-
-    switch($http_method) {
-        case 'GET':
-            $data = $rencontresController->getRencontreById($id);
-            if($data == false) {
-                deliver_response(404, "Le joueurs d'id $id n'existe pas");
-            } else {
-                deliver_response(200, "Données récuperée avec succèes", $data);
-            }
-            break;
-        case 'PUT':
-            $body = file_get_contents("php://input");
-            $data = json_decode($body, true);
-            try {
-                $renconctreAModifier = Rencontre::buildRencontreFromArray($data);
-                $rencontreAModifier->setRencontreId($id);
-                $res = $rencontreController->modifierRencontreByArray($rencontreAModifier);
-
-                if($res) {
-                    deliver_response(200, "Données du rencontre modifié avec succées.");
-                } else {
-                    deliver_response(404, "Rencontre d'id $id n'existe pas");
-                }
-            } catch(PDOException $e) {
-                deliver_response(500, "Erreur pendand la modification de la ressource");
-            } catch(InvalidArgumentException $e) {
-                deliver_response(400, $e->getMessage());
-            }
-            break;
-        case 'DELETE':
-            $data = $rencontreController->supprimerRencontre($id);
-            print_r($data);
-
-            if($data == false) {
-                deliver_response(404, "Rencontre d'id $id n'existe pas");
-                } else {
-                deliver_response(200, "Rencontre d'id $id supprimée avec succèes");
-            }
-            break;
-    }
-}
-
-if(rtrim($resource, "/") == "/feuilledematche") {
-    switch($http_method) {
-        case 'GET':
-            try {
-                $data = $participationsController->listerToutesLesParticipations();
-                if($data == true) {
-                    deliver_response(200, "Liste de toutes les participations récuperée avec succèes", $data);
-                } else {
-                    deliver_response(200, "La base de données ne contient aucun participation enregistré.");
-                }
-            } catch(PDOException $e) {
-                deliver_response(500, "Erreur lors de la récuperation des participations.");
-            }
-            break;
-        case 'POST':
-            $body = file_get_contents("php://input");
-            $data = json_decode($body, true);
-            try {
-            $participation = $participationsController->buildParticipationFromArray($data);
-                if ($participationsController->assignerUnParticipantByArray($participation)) {
-                    deliver_response(201, "Données crée avec succés.");
-                } else {
-                    deliver_response(400, "Problem d'insertion");
-                }
-            } catch(PDOException $e) {
-                deliver_response(500, "Erreur lors de l'insertion du joueur");
-            }
-            break;
-            
-    }
-}
-
-if(preg_match('#^/feuilledematche/([0-9]+)$#', $resource, $matches) == 1) {
-    #Get the id
-    $id = $matches[1];
-
-    switch($http_method) {
-        case 'GET':
-            $data = $participationsController->getFeuilleDeMatch($id);
-
-            if($data == false) {
-                deliver_response(404, "Le joueurs d'id $id n'existe pas");
-            } else {
-                deliver_response(200, "Données récuperée avec succèes", $data);
-            }
-            break;
-        case 'PUT':
-            $body = file_get_contents("php://input");
-            $data = json_decode($body, true);
-            try {
-                $participationAModifier = $participationsController->buildParticipationFromArray($data);
-                
-                $res = $participationsController->modifierParticipationByArray($participationAModifier);
-
-                if($res) {
-                    deliver_response(200, "Données du participation modifié avec succées.");
-                } else {
-                    deliver_response(404, "Participation d'id $id n'existe pas");
-                }
-            } catch(PDOException $e) {
-                deliver_response(500, "Erreur pendand la modification de la ressource");
-            } catch(InvalidArgumentException $e) {
-                deliver_response(400, $e->getMessage());
-            }
-            break;
-        case 'DELETE':
-            $data = $participationsController->supprimerLaParticipation($id);
-            print_r($data);
-
-            if($data == false) {
-                deliver_response(404, "Performance d'id $id n'existe pas");
-                } else {
-                deliver_response(200, "Performance d'id $id supprimée avec succèes");
-            }
-            break;
-    }
-}
-
-if(rtrim($resource, "/") == '/statistiques') {
-    switch($http_method) {
-        case 'GET':
-            try {
-                $data = $statistiquesController->getStatistiquesEquipe();
-                if($data) {
-                    deliver_response(200, "Stats récuperée avec succèes", $data);
-                } else {
-                    deliver_response(200, "La base de données ne contient aucun rencontre.");
-                }
-            } catch(PDOException $e) {
-                deliver_response(500, "Erreur lors de la récuperation des joueurs.");
-            }
-            break;
-    }
-}
-
-if(rtrim($resource, "/") == '/statistiques/joueurs') {
-    switch($http_method) {
-        case 'GET':
-            try {
-                $data = $statistiquesController->getStatistiquesTousLesJoueurs();
-                if($data == true) {
-                    deliver_response(200, "Stats des joueurs récuperées avec succèes", $data);
-                } else {
-                    deliver_response(200, "Aucun joueur trouvé.");
-                }
-            } catch(PDOException $e) {
-                deliver_response(500, "Erreur lors de la récupération des stats joueurs.");
-            }
-            break;
-    }
-}
-
-if(preg_match('#^/statistiques/joueurs/([0-9]+)$#', $resource, $matches) == 1) {
-    $id = $matches[1];
-
-    switch($http_method) {
-        case 'GET':
-            try {
-                $data = $statistiquesController->getStatistiquesDUnJoueur((int)$id);
-                if($data == false) {
-                    deliver_response(404, "Joueur d'id $id n'existe pas");
-                } else {
-                    deliver_response(200, "Stats du joueur récupérées avec succès", $data);
-                }
-            } catch(PDOException $e) {
-                deliver_response(500, "Erreur lors de la récupération des stats du joueur.");
-            }
-            break;
-    }
-}
-
-?>
