@@ -1,6 +1,6 @@
 <?php
 
-require_once $_SERVER['DOCUMENT_ROOT'] . '/Psr4AutoloaderClass.php';
+require_once __DIR__ . '/Psr4AutoloaderClass.php';
 require_once 'Utils/Http_Response.php';
 require_once 'Utils/Jwt_Util.php';
 
