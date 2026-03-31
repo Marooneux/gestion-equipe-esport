@@ -16,7 +16,7 @@ class DatabaseHandler {
     private function __construct(){
         try{
             $env = parse_ini_file(__DIR__ . '/../.env') ?: [];
-            $this->server = $_ENV['DB_HOST'] ?? 'localhost';
+            $this->server = $_ENV['DB_HOST'] ?? '';
             $this->db = $_ENV['DB_NAME'] ?? '';
             $this->login = $_ENV['DB_USER'] ?? '';
             $this->mdp = $_ENV['DB_PASSWORD'] ?? '';
