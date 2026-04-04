@@ -17,9 +17,7 @@ Application web frontend de gestion d'équipe de sport dans le cadre du projet R
 
 ### URL
 
-```
-https://frontendr401.alwaysdata.net/login
-```
+[https://frontendr401.alwaysdata.net/login](https://frontendr401.alwaysdata.net/login)
 
 ### Identifiants de connexion
 
@@ -44,13 +42,17 @@ Cette API expose les ressources suivantes :
 - **Participations** — lien joueurs/rencontres
 - **Commentaires** — évaluations des joueurs
 
-### API secondaire — <!-- Nom de la deuxième API -->
+### API secondaire — Authentification JWT
 
 ```
-<!-- URL de la doc de la deuxième API -->
+https://r401auth.alwaysdata.net/docs/
 ```
 
-<!-- Description de la deuxième API -->
+Cette API gère l'authentification des utilisateurs :
+
+- **Login** — vérification des identifiants, génération d'un token JWT
+- **Vérification du token** — validation et décodage du JWT pour les requêtes protégées
+- **Logout** — invalidation du token
 
 ---
 
