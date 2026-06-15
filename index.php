@@ -24,7 +24,7 @@ const AUTH_VERIFY_URL = 'https://r401auth.alwaysdata.net/auth/verify';
 
 $loader = new Psr4AutoloaderClass();
 $loader->register();
-$loader->addNamespace('R301', '.');
+$loader->addNamespace('R301', __DIR__);
 
 $httpMethod = $_SERVER['REQUEST_METHOD'];
 $resource = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);

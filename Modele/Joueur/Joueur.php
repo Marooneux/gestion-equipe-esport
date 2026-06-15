@@ -11,8 +11,8 @@ class Joueur implements \JsonSerializable {
     private string $prenom;
     private string $numeroDeLicence;
     private DateTime $dateDeNaissance;
-    private int $tailleEnCm;
-    private int $poidsEnKg;
+    private float $tailleEnCm; // INT -> FLOAT
+    private float $poidsEnKg; // INT -> FLOAT
     private ?JoueurStatut $statut;
 
     public function __construct(
@@ -21,8 +21,8 @@ class Joueur implements \JsonSerializable {
         string $prenom,
         string $numeroDeLicence,
         DateTime $dateDeNaissance,
-        int $tailleEnCm,
-        int $poidsEnKg,
+        float $tailleEnCm, // INT -> FLOAT
+        float $poidsEnKg, // INT -> FLOAT
         ?JoueurStatut $statut
     ) {
         $this->joueurId = $joueurId;
@@ -108,12 +108,12 @@ class Joueur implements \JsonSerializable {
         $this->dateDeNaissance = $dateDeNaissance;
     }
 
-    public function setTailleEnCm(int $tailleEnCm): void
+    public function setTailleEnCm(float $tailleEnCm): void // INT -> FLOAT
     {
         $this->tailleEnCm = $tailleEnCm;
     }
 
-    public function setPoidsEnKg(int $poidsEnKg): void
+    public function setPoidsEnKg(float $poidsEnKg): void // INT -> FLOAT
     {
         $this->poidsEnKg = $poidsEnKg;
     }
