@@ -1,144 +1,59 @@
-# r401_team_management_frontend
+# Interface web du coach
 
-Application web frontend de gestion d'équipe de sport dans le cadre du projet R4.01. Interface permettant de gérer les joueurs, les rencontres, les feuilles de match et les statistiques, en communiquant avec l'API backend via authentification JWT.
+Application web qui permet au coach de gérer son équipe. Elle ne se connecte à aucune base de données : toutes les données passent par le [backend](../backend/), et la connexion par le [service d'authentification](../auth/).
 
----
+Démo : https://frontendr401.alwaysdata.net/login (compte `coach` / `sport`)
 
-## Auteurs
+## Pages
 
-| Nom             | Email                            |
-| --------------- | -------------------------------- |
-| Wacker Luka     | luka.wacker@etu.iut-tlse3.fr     |
-| Cumbane Claudio | claudio.cumbane@etu.iut-tlse3.fr |
+| Page | Contenu |
+|---|---|
+| Connexion | Récupère un token JWT auprès du service d'authentification et le conserve en session |
+| Tableau de bord | Statistiques de l'équipe et de chaque joueur |
+| Joueurs | Liste, recherche, ajout, modification, suppression, commentaires du coach |
+| Rencontres | Liste des matchs, ajout, modification, saisie du résultat |
+| Feuille de match | Composition par poste (titulaires et remplaçants) et évaluation des performances |
 
----
+Toutes les pages sauf la connexion redirigent vers `/login` si l'utilisateur n'est pas authentifié.
 
-## Accès au site
-
-### URL
-
-[https://frontendr401.alwaysdata.net/login](https://frontendr401.alwaysdata.net/login)
-
-### Identifiants de connexion
-
-| Compte | Login | Mot de passe |
-| ------ | ----- | ------------ |
-| Coach  | coach | sport        |
-
----
-
-## Documentation API
-
-### API principale — Gestion de l'équipe
+## Structure
 
 ```
-https://r401teammanagementapi.alwaysdata.net/docs/
-```
-
-Cette API expose les ressources suivantes :
-
-- **Joueurs** — création, lecture, modification, suppression
-- **Rencontres** — gestion des matchs
-- **Participations** — lien joueurs/rencontres
-- **Commentaires** — évaluations des joueurs
-
-### API secondaire — Authentification JWT
-
-```
-https://r401auth.alwaysdata.net/docs/
-```
-
-Cette API gère l'authentification des utilisateurs :
-
-- **Login** — vérification des identifiants, génération d'un token JWT
-- **Vérification du token** — validation et décodage du JWT pour les requêtes protégées
-- **Logout** — invalidation du token
-
----
-
-## Technologies utilisées
-
-- **PHP** — logique serveur, routage, contrôleurs
-- **HTML / CSS** — interface utilisateur
-- **JWT** — authentification via token (service d'auth dédié)
-- **MySQL / PDO** — persistance des données
-- **Apache / mod_rewrite** — réécriture d'URL
-
----
-
-## Structure du projet
-
-```
-r401_team_management_frontend/
+frontend/
+├── index.php              Point d'entrée : routage et contrôle de session
 ├── Controleur/
-│   ├── ApiClient.php              # Client HTTP vers l'API backend
-│   ├── JoueurControleur.php       # Gestion des joueurs
-│   ├── RencontreControleur.php    # Gestion des rencontres
-│   ├── ParticipationControleur.php
-│   ├── CommentaireControleur.php
-│   ├── StatistiquesControleur.php
-│   └── UtilisateurControleur.php  # Authentification / session
+│   ├── ApiClient.php      Appels HTTP vers le backend et le service d'authentification
+│   └── ...                Un contrôleur par ressource
 ├── Vue/
-│   ├── login.php
-│   ├── tableauDeBord.php
-│   ├── joueur.php
-│   ├── rencontre.php
-│   ├── joueur/                    # Vues CRUD joueurs
-│   ├── rencontre/                 # Vues CRUD rencontres
-│   ├── feuilleDeMatch/            # Feuille de match et évaluations
-│   └── Component/                 # Composants réutilisables (formulaires, selects)
-├── index.php                      # Point d'entrée, routage, session
-├── stylesheet.css
-├── .htaccess                      # Réécriture d'URL
-└── schema.sql                     # Schéma de la base de données
+│   ├── Component/         Composants réutilisables (formulaires, listes déroulantes)
+│   ├── joueur/
+│   ├── rencontre/
+│   └── feuilleDeMatch/
+└── stylesheet.css
 ```
-
----
 
 ## Installation locale
 
-1. Cloner le dépôt dans le répertoire web (ex: `laragon/www/`)
-2. Créer un fichier `.env` à la racine :
+### Prérequis
+PHP 8.1+ (avec `allow_url_fopen` activé et l'extension `openssl`), Apache avec `mod_rewrite`.
 
-```ini
-DB_SERVER=localhost
-DB_NAME=nom_de_la_base
-DB_LOGIN=utilisateur
-DB_PASSWORD=motdepasse
-API_URL=https://r401teammanagementapi.alwaysdata.net
-AUTH_URL=https://r401auth.alwaysdata.net
-```
+### 1. URLs des API
+Par défaut, le frontend utilise les API en ligne. Pour pointer vers des services locaux, modifier dans `Controleur/ApiClient.php` :
+- la constante `API_URL` (ex : `http://api.local`)
+- l'URL de connexion (ex : `http://auth.local/auth/login`)
 
-3. Importer `schema.sql` dans votre base de données
-4. S'assurer que `mod_rewrite` est activé (Apache)
-
-### Configuration Apache
-
-#### Modules requis
-
-```
-php
-php-mysql
-rewrite
-```
-
-#### Virtual host
+### 2. VirtualHost Apache
 
 ```apache
 <VirtualHost *:80>
-    ServerName ${serverName}
-    DocumentRoot /var/www/${serverName}
+    ServerName front.local
+    DocumentRoot "C:/chemin/vers/frontend"
 
-    <Directory "/var/www/${serverName}">
-        Options Indexes FollowSymLinks
-        AllowOverride None
+    <Directory "C:/chemin/vers/frontend">
+        AllowOverride All
         Require all granted
     </Directory>
-
-    RewriteEngine On
-    RewriteCond %{REQUEST_URI} !\.(css|jpg|jpeg|gif|ico|js)$
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^ /index.php [QSA,L]
 </VirtualHost>
 ```
+
+Ajouter `127.0.0.1 front.local` dans le fichier hosts, puis ouvrir http://front.local/login.
