@@ -39,7 +39,7 @@ usort($commentaires, fn($a, $b) => $b['date'] <=> $a['date']);
             <input type="hidden" name="joueurId" value="<?php echo $joueurId; ?>" />
             <tr>
                 <td><?php echo date('d/m/Y H:i', strtotime($commentaire['date'])); ?></td>
-                <td><?php echo $commentaire['contenu']; ?></td>
+                <td><?php echo htmlspecialchars($commentaire['contenu']); ?></td>
                 <td class="actions">
                     <button class="delete" type="submit">Supprimer</button>
                 </td>

@@ -15,7 +15,7 @@ $joueurs = $controleur->rechercherLesJoueurs(
     <form action="joueur" method="get">
         <div class="row">
             <div class="invCol-80">
-                <input type="search" name="recherche" placeholder="Rechercher" value="<?= isset($_GET['recherche']) ? $_GET['recherche'] : '' ?>"/>
+                <input type="search" name="recherche" placeholder="Rechercher" value="<?= htmlspecialchars($_GET['recherche'] ?? '') ?>"/>
             </div>
         </div>
         <div class="row">

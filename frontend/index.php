@@ -14,6 +14,7 @@ if (preg_match('/\.(?:png|jpg|jpeg|gif|ico|css|js)\??.*$/', $_SERVER["REQUEST_UR
 session_start();
 if ($_SERVER["REQUEST_URI"] !== "/login" && !isset($_SESSION ['username'])) {
     header('Location: /login');
+    exit;
 }
 ?>
 

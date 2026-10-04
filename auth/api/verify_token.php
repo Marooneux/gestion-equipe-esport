@@ -8,8 +8,9 @@ switch ($http_method){
         $postedData = file_get_contents('php://input');
         $data = json_decode($postedData, true);
 
-        $token = $data["token"];
-        $isValid = is_jwt_valid($token, "sportteam");
+        $token = $data["token"] ?? "";
+        $env = parse_ini_file(__DIR__ . "/../.env");
+        $isValid = is_jwt_valid($token, $env["JWT_SECRET"]);
         if (!$isValid) {
             deliver_response(400, "Le token n'est pas valide");
         } else {
