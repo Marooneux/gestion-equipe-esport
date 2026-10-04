@@ -1,0 +1,44 @@
+<?php
+namespace R301\Modele\Joueur\Commentaire;
+
+use DateTime;
+
+class Commentaire implements \JsonSerializable {
+    private int $commentaireId;
+    private readonly string $contenu;
+    private readonly DateTime $date;
+
+    public function __construct(int $commentaireId, string $contenu, DateTime $date)
+    {
+        $this->commentaireId = $commentaireId;
+        $this->contenu = $contenu;
+        $this->date = $date;
+    }
+
+    public function getCommentaireId(): int
+    {
+        return $this->commentaireId;
+    }
+
+    public function getContenu(): string
+    {
+        return $this->contenu;
+    }
+
+    public function getDate(): DateTime
+    {
+        return $this->date;
+    }
+
+    public function jsonSerialize(): array
+    {
+        return [
+            'id' => $this->commentaireId,
+            'contenu' => $this->contenu,
+            'date' => $this->date->format('Y-m-d H:i:s'),
+        ];
+    }
+
+}
+
+
