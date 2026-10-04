@@ -1,0 +1,177 @@
+openapi: 3.0.3
+info:
+  title: API Team Management Auth
+  version: 1.0.0
+  description: API d'authentification JWT (login et verification de token).
+
+servers:
+  - url: https://r401auth.alwaysdata.net
+
+tags:
+  - name: Auth
+    description: Endpoints d'authentification publics.
+
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Obtenir un token JWT
+      operationId: get_token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              exemple:
+                value:
+                  login: test
+                  password: test
+      responses:
+        '200':
+          description: Token genere
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginSuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/InvalidCredentialsError'
+
+  /auth/verify:
+    post:
+      tags: [Auth]
+      summary: Verifier un token JWT
+      operationId: verify_token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyTokenRequest'
+            examples:
+              exemple:
+                value:
+                  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.sample
+      responses:
+        '200':
+          description: Token valide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifySuccessResponse'
+        '400':
+          $ref: '#/components/responses/InvalidTokenOrMethodError'
+
+components:
+  schemas:
+    LoginRequest:
+      type: object
+      required: [login, password]
+      properties:
+        login:
+          type: string
+        password:
+          type: string
+
+    VerifyTokenRequest:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+
+    BaseResponse:
+      type: object
+      required: [status_code, status_message, data]
+      properties:
+        status_code:
+          type: integer
+          example: 200
+        status_message:
+          type: string
+        data:
+          nullable: true
+
+    LoginSuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: string
+              example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.sample
+
+    VerifySuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: boolean
+              example: true
+
+    ErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              nullable: true
+              example: null
+
+  responses:
+    BadRequestError:
+      description: Champs manquants ou methode HTTP invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missingFields:
+              value:
+                status_code: 400
+                status_message: Le login et le mot de passe sont obligatoires
+                data: null
+            invalidMethod:
+              value:
+                status_code: 400
+                status_message: Il faut utiliser la methode POST
+                data: null
+
+    InvalidCredentialsError:
+      description: Login ou mot de passe invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status_code: 403
+            status_message: L'utilisateur et/ou le mot de passe sont incorrectes
+            data: null
+
+    InvalidTokenOrMethodError:
+      description: Token invalide ou methode HTTP invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalidToken:
+              value:
+                status_code: 400
+                status_message: Le token n'est pas valide
+                data: null
+            invalidMethod:
+              value:
+                status_code: 400
+                status_message: Il faut utiliser la methode POST
+                data: null
+
+x-internal:
+  verifAuth:
+    file: src/modele/verifAuth.php
+    method: verifAuth(login, password)
+    description: Methode interne utilisee par /auth/login pour verifier les credentials et generer le JWT.
