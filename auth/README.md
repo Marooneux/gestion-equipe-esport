@@ -1,110 +1,72 @@
-# r401_team_management_auth
+# Service d'authentification
 
-Service d'authentification JWT pour la gestion de l'équipe de sport dans le cadre du projet R4.01. Expose une API REST permettant d'obtenir et de vérifier des tokens JWT.
+API qui vérifie les identifiants des utilisateurs et délivre des tokens **JWT**. Le [frontend](../frontend/) l'utilise pour la connexion, et le [backend](../backend/) pour valider chaque requête.
 
----
+## Endpoints
 
-## Auteurs
+| Méthode | Route | Corps (JSON) | Réponse |
+|---|---|---|---|
+| `POST` | `/auth/login` | `{ "login": "...", "password": "..." }` | Token JWT valable 1 heure |
+| `POST` | `/auth/verify` | `{ "token": "..." }` | `200` si le token est valide, `400` sinon |
 
-| Nom             | Email                            |
-| --------------- | -------------------------------- |
-| Wacker Luka     | luka.wacker@etu.iut-tlse3.fr     |
-| Cumbane Claudio | claudio.cumbane@etu.iut-tlse3.fr |
+Le token contient l'identifiant de l'utilisateur, son rôle et sa date d'expiration. Il est signé en HS256 avec un secret défini dans le `.env`.
 
----
+Documentation interactive : https://r401auth.alwaysdata.net/docs/ (spécification dans `docs/openapi.yaml`)
 
-## Accès au service
-
-### URL de base
+## Structure
 
 ```
-https://r401auth.alwaysdata.net
-```
-
----
-
-## Documentation API
-
-```
-https://r401auth.alwaysdata.net/docs/
-```
-
----
-
-## Technologies utilisées
-
-- **PHP** — logique serveur, génération et validation JWT
-- **JWT (HS256)** — authentification sans état via token signé
-- **MySQL / PDO** — vérification des credentials en base
-- **Apache / mod_rewrite** — réécriture d'URL + protection des fichiers sensibles
-
----
-
-## Structure du projet
-
-```
-r401_team_management_auth/
+auth/
 ├── api/
-│   ├── get_token.php       # Logique de l'endpoint /auth/login
-│   └── verify_token.php    # Logique de l'endpoint /auth/verify
+│   ├── get_token.php        Endpoint /auth/login
+│   └── verify_token.php     Endpoint /auth/verify
 ├── src/
 │   ├── modele/
-│   │   ├── DatabaseHandler.php  # Connexion PDO (singleton)
-│   │   └── verifAuth.php        # Vérification des credentials en BD
+│   │   ├── DatabaseHandler.php   Connexion PDO (Singleton)
+│   │   └── verifAuth.php         Vérification des identifiants
 │   └── utils/
-│       └── jwt_utils.php        # Génération et validation JWT (HS256)
-├── docs/
-│   └── openapi.yaml        # Spécification OpenAPI 3.0.3
-├── .env                    # Variables d'environnement (non versionné)
-├── .htaccess               # Réécriture d'URL + protection fichiers sensibles
-└── schema.sql              # Schéma de la base de données
+│       └── jwt_utils.php         Génération et validation des JWT
+├── docs/                    OpenAPI + Swagger UI
+├── ressources/schema.sql    Table des utilisateurs + compte de démo
+└── .htaccess                Réécriture des routes et blocage de .env et *.sql
 ```
-
----
 
 ## Installation locale
 
-1. Cloner le dépôt dans le répertoire web (ex: `laragon/www/`)
-2. Créer un fichier `.env` à la racine :
+### Prérequis
+PHP 8.1+ avec `pdo_mysql`, Apache avec `mod_rewrite`, MySQL.
+
+### 1. Base de données
+Créer une base puis importer `ressources/schema.sql`. Le script crée le compte de démo `coach` / `sport`.
+
+### 2. Fichier `.env`
+À créer à la racine du dossier `auth/` (il est ignoré par Git) :
 
 ```ini
 DB_SERVER=localhost
 DB_NAME=nom_de_la_base
 DB_LOGIN=utilisateur
-DB_PASSWORD=motdepasse
-JWT_SECRET=votre_secret
+DB_PASSWORD=mot_de_passe
+JWT_SECRET=un_secret_long_et_aleatoire
 ```
 
-3. Importer `schema.sql` dans votre base de données
-4. S'assurer que `mod_rewrite` est activé (Apache)
-
-### Configuration Apache
-
-#### Modules requis
-
-```
-php
-php-mysql
-rewrite
-```
-
-#### Virtual host
+### 3. VirtualHost Apache
+Les routes sont gérées par le `.htaccess`, il faut donc autoriser son utilisation :
 
 ```apache
 <VirtualHost *:80>
-    ServerName ${serverName}
-    DocumentRoot /var/www/${serverName}
+    ServerName auth.local
+    DocumentRoot "C:/chemin/vers/auth"
 
-    <Directory "/var/www/${serverName}">
-        Options Indexes FollowSymLinks
-        AllowOverride None
+    <Directory "C:/chemin/vers/auth">
+        AllowOverride All
         Require all granted
     </Directory>
-
-    RewriteEngine On
-    RewriteCond %{REQUEST_URI} !\.(css|jpg|jpeg|gif|ico|js)$
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^ /index.php [QSA,L]
 </VirtualHost>
+```
+
+Ajouter `127.0.0.1 auth.local` dans le fichier hosts, puis tester :
+
+```bash
+curl -X POST http://auth.local/auth/login -H "Content-Type: application/json" -d "{\"login\":\"coach\",\"password\":\"sport\"}"
 ```
