@@ -1,0 +1,88 @@
+
+<?php
+
+use R301\Controleur\RencontreControleur;
+use R301\Vue\Component\SelectResultat;
+
+$controleur = RencontreControleur::getInstance();
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST'
+        && isset($_POST['action'])
+        && isset($_POST['rencontreId'])
+) {
+    switch($_POST['action']) {
+        case "ouvrirFeuilleDeMatch":
+            header('Location: /feuilleDeMatch/feuilleDeMatch?id='.$_POST['rencontreId']);
+            die();
+        case "ouvrirEvaluations":
+            header('Location: /feuilleDeMatch/evaluation?id='.$_POST['rencontreId']);
+            die();
+        case "modifier":
+            header('Location: /rencontre/modifier?id='.$_POST['rencontreId']);
+            die();
+        case "enregistrerResultat":
+            if (isset($_POST['resultat'])) {
+                if (!$controleur->enregistrerResultat($_POST['rencontreId'], $_POST['resultat'])) {
+                    error_log("Erreur lors de la mise à jour du resultat");
+                }
+                header('Location: /rencontre');
+                die();
+            }
+        case "supprimer":
+            if (!$controleur->supprimerRencontre($_POST['rencontreId'])) {
+                error_log("Erreur lors de la suppression de la rencontre");
+            }
+            header('Location: /rencontre');
+            die();
+    }
+} else {
+
+$rencontres = $controleur->listerToutesLesRencontres();
+
+?>
+<h1>Rencontres</h1>
+<div class="overflow container">
+    <table>
+        <tr>
+            <th style="width:10%">Date</th>
+            <th style="width:10%">Equipe Adverse</th>
+            <th style="width:20%">Adresse</th>
+            <th style="width:8%">Lieu</th>
+            <th style="width:8%">Résultat</th>
+            <th style="width:20%; min-width: 200px;">Actions</th>
+        </tr>
+        <?php foreach ($rencontres as $rencontre):
+            $dateStr = is_array($rencontre['date_heure']) ? $rencontre['date_heure']['date'] : $rencontre['date_heure'];
+            $estPassee = strtotime($dateStr) < time();
+            $selectResultat = new SelectResultat(null, $rencontre['resultat']);
+        ?>
+        <form action="rencontre" method="post">
+            <tr>
+                <input type="hidden" name="rencontreId" value="<?php echo $rencontre['id']; ?>" />
+                <td><?php echo date('d/m/Y H:i', strtotime($dateStr)); ?></td>
+                <td><?php echo $rencontre['equipe_adverse']; ?></td>
+                <td><?php echo $rencontre['adresse']; ?></td>
+                <td><?php echo $rencontre['lieu_recontre']; ?></td>
+                <?php if ($estPassee && $rencontre['resultat'] === null): ?>
+                    <td><?php $selectResultat->toHTML(); ?></td>
+                <?php else: ?>
+                    <td><?php echo $rencontre['resultat']; ?></td>
+                <?php endif; ?>
+                <td class="actions">
+                    <?php if (!$estPassee): ?>
+                    <button name="action" value="ouvrirFeuilleDeMatch" class="info">Feuilles de match</button>
+                    <button name="action" value="modifier" class="update">Modifier</button>
+                    <button name="action" value="supprimer" class="delete">Supprimer</button>
+                    <?php else: ?>
+                    <button name="action" value="ouvrirEvaluations" class="info">Évaluations</button>
+                    <?php if ($estPassee && $rencontre['resultat'] === null): ?>
+                    <button class="create" name="action" value="enregistrerResultat">Enregistrer résultat</button>
+                    <?php endif; ?>
+                    <?php endif; ?>
+                </td>
+            </tr>
+        </form>
+        <?php endforeach; ?>
+    </table>
+</div>
+<?php } ?>
