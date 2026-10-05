@@ -4,6 +4,16 @@ Application web permettant à un coach de gérer son équipe e-sport (postes de 
 
 Projet réalisé en binôme dans le cadre du module R4.01 du BUT Informatique à l'IUT Paul Sabatier (Toulouse III). L'application est découpée en **trois services indépendants** qui communiquent via des API REST et une authentification JWT.
 
+## Démo en ligne
+
+| Service | URL |
+|---|---|
+| Application | https://frontendr401.alwaysdata.net/login |
+| Documentation API backend | https://r401teammanagementapi.alwaysdata.net/docs/ |
+| Documentation API auth | https://r401auth.alwaysdata.net/docs/ |
+
+Compte de démonstration : `coach` / `sport`
+
 ## Architecture
 
 ```mermaid
@@ -43,16 +53,6 @@ Chaque service a sa propre base de données et peut être déployé séparément
 | Documentation API | OpenAPI 3 + Swagger UI |
 | Serveur | Apache (`mod_rewrite`) |
 | Hébergement | alwaysdata |
-
-## Démo en ligne
-
-| Service | URL |
-|---|---|
-| Application | https://frontendr401.alwaysdata.net/login |
-| Documentation API backend | https://r401teammanagementapi.alwaysdata.net/docs/ |
-| Documentation API auth | https://r401auth.alwaysdata.net/docs/ |
-
-Compte de démonstration : `coach` / `sport`
 
 ## Installation locale
 
